@@ -11,6 +11,7 @@ Index of this file:
 // [SECTION] Forward declarations
 // [SECTION] Context pointer
 // [SECTION] STB libraries includes
+// [SECTION] Stack Layout includes
 // [SECTION] Macros
 // [SECTION] Generic helpers
 // [SECTION] ImDrawList support
@@ -220,6 +221,14 @@ using ImGuiErrorStringCallback = std::function<void(const std::string&)>;
 
 #ifndef GImGui
 extern IMGUI_API ImGuiContext* GImGui;  // Current implicit context pointer
+#endif
+
+//-------------------------------------------------------------------------
+// [SECTION] Stack Layout includes
+//-------------------------------------------------------------------------
+
+#if IMGUI_HAS_STACK_LAYOUT
+# include "imgui_stacklayout_internal.h"
 #endif
 
 //-----------------------------------------------------------------------------
