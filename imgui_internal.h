@@ -11,6 +11,7 @@ Index of this file:
 // [SECTION] Forward declarations
 // [SECTION] Context pointer
 // [SECTION] STB libraries includes
+// [SECTION] Stack Layout includes
 // [SECTION] Macros
 // [SECTION] Generic helpers
 // [SECTION] ImDrawList support
@@ -231,6 +232,14 @@ namespace ImStb
 #include "imstb_textedit.h"
 
 } // namespace ImStb
+
+//-------------------------------------------------------------------------
+// [SECTION] Stack Layout includes
+//-------------------------------------------------------------------------
+
+#if IMGUI_HAS_STACK_LAYOUT
+# include "imgui_stacklayout_internal.h"
+#endif
 
 //-----------------------------------------------------------------------------
 // [SECTION] Macros
