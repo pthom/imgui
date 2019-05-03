@@ -35,6 +35,8 @@
 #define IMGUI_HAS_TEXTURES          // Added ImGuiBackendFlags_RendererHasTextures - from IMGUI_VERSION_NUM >= 19198
 #define IMGUI_HAS_VIEWPORT          // In 'docking' WIP branch.
 #define IMGUI_HAS_DOCK              // In 'docking' WIP branch.
+#define IMGUI_HAS_STACK_LAYOUT      1 // Stack-Layout PR #846
+
 
 //
 // Adaptations for ImGui Bundle are noted with [ADAPT_IMGUI_BUNDLE]
@@ -1976,6 +1978,7 @@ enum ImGuiStyleVar_
     ImGuiStyleVar_GrabMinSize,              // float     GrabMinSize
     ImGuiStyleVar_GrabRounding,             // float     GrabRounding
     ImGuiStyleVar_ImageBorderSize,          // float     ImageBorderSize
+    ImGuiStyleVar_LayoutAlign,              // float     LayoutAlign
     ImGuiStyleVar_TabRounding,              // float     TabRounding
     ImGuiStyleVar_TabBorderSize,            // float     TabBorderSize
     ImGuiStyleVar_TabMinWidthBase,          // float     TabMinWidthBase
@@ -2483,6 +2486,7 @@ struct ImGuiStyle
     float       ScrollbarPadding;           // Padding of scrollbar grab within its frame (same for both axes).
     float       GrabMinSize;                // Minimum width/height of a grab box for slider/scrollbar.
     float       GrabRounding;               // Radius of grabs corners rounding. Set to 0.0f to have rectangular slider grabs.
+    float       LayoutAlign;                // Element alignment inside horizontal and vertical layouts (0.0f - left/top, 1.0f - right/bottom, 0.5f - center).
     float       LogSliderDeadzone;          // The size in pixels of the dead-zone around zero on logarithmic sliders that cross zero.
     float       ImageBorderSize;            // Thickness of border around Image() calls.
     float       TabRounding;                // Radius of upper corners of a tab. Set to 0.0f to have rectangular tabs.
@@ -4613,6 +4617,10 @@ typedef ImFontAtlasRect ImFontAtlasCustomRect;
 
 #ifdef _MSC_VER
 #pragma warning (pop)
+#endif
+
+#if IMGUI_HAS_STACK_LAYOUT
+#include "imgui_stacklayout.h"
 #endif
 
 // Include imgui_user.h at the end of imgui.h
