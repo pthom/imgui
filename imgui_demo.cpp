@@ -97,7 +97,7 @@ Index of this file:
 // [SECTION] Example App: Docking, DockSpace / ShowExampleAppDockSpace()
 // [SECTION] Example App: Documents Handling / ShowExampleAppDocuments()
 // [SECTION] Example App: Assets Browser / ShowExampleAppAssetsBrowser()
-
+// [SECTION] IMGUI_DEMO_MARKER utilities
 */
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
@@ -266,6 +266,9 @@ extern ImGuiDemoMarkerCallback      GImGuiDemoMarkerCallback;
 extern void*                        GImGuiDemoMarkerCallbackUserData;
 ImGuiDemoMarkerCallback             GImGuiDemoMarkerCallback = NULL;
 void*                               GImGuiDemoMarkerCallbackUserData = NULL;
+extern bool                     GImGuiDemoMarker_IsActive;
+bool                            GImGuiDemoMarker_IsActive = false;
+void                            ImGuiDemoMarker_GuiToggle();
 #define IMGUI_DEMO_MARKER(section)  do { if (GImGuiDemoMarkerCallback != NULL) GImGuiDemoMarkerCallback(__FILE__, __LINE__, section, GImGuiDemoMarkerCallbackUserData); } while (0)
 
 //-----------------------------------------------------------------------------
@@ -482,6 +485,9 @@ void ImGui::ShowDemoWindow(bool* p_open)
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
     ImGui::Spacing();
 
+    ImGuiDemoMarker_GuiToggle();
+    ImGui::BeginChild("Demos");
+
     IMGUI_DEMO_MARKER("Help");
     if (ImGui::CollapsingHeader("Help"))
     {
@@ -696,6 +702,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     ShowDemoWindowInputs();
 
     // End of ShowDemoWindow()
+    ImGui::EndChild(); // </ImGui::BeginChild("Demos");>
     ImGui::PopItemWidth();
     ImGui::End();
 }
@@ -8258,6 +8265,7 @@ static void ShowExampleAppMainMenuBar()
 // (future version will add explicit flags to BeginMenu() to request processing shortcuts)
 static void ShowExampleMenuFile()
 {
+    IMGUI_DEMO_MARKER("Examples");
     IMGUI_DEMO_MARKER("Examples/Menu");
     ImGui::MenuItem("(demo menu)", NULL, false, false);
     if (ImGui::MenuItem("New")) {}
@@ -10614,6 +10622,29 @@ void ShowExampleAppAssetsBrowser(bool* p_open)
     IMGUI_DEMO_MARKER("Examples/Assets Browser");
     static ExampleAssetsBrowser assets_browser;
     assets_browser.Draw("Example: Assets Browser", p_open);
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] IMGUI_DEMO_MARKER utilities
+// Utilities that provide an interactive "code lookup" via the IMGUI_DEMO_MARKER macro
+//-----------------------------------------------------------------------------
+
+// Display a "Code Lookup" checkbox that toggles interactive code browsing
+void ImGuiDemoMarker_GuiToggle()
+{
+    if (GImGuiDemoMarkerCallback == NULL)
+        return;
+    ImGui::Checkbox("Code Lookup", &GImGuiDemoMarker_IsActive);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip(
+            "Check this box and hover any demo to pinpoint its location inside the code.\n"
+            "\n"
+            "(you can also press \"Ctrl-Alt-C\" at any time to toggle this mode)"
+        );
+    if (!GImGuiDemoMarker_IsActive && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)) && ImGui::GetIO().KeyCtrl && ImGui::GetIO().KeyAlt)
+        GImGuiDemoMarker_IsActive = true;
+    if (GImGuiDemoMarker_IsActive && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+        GImGuiDemoMarker_IsActive = false;
 }
 
 // End of Demo code
