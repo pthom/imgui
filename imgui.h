@@ -2460,9 +2460,18 @@ struct ImGuiStyle
     float       _MainScale;                 // FIXME-WIP: Reference scale, as applied by ScaleAllSizes(). PLEASE DO NOT USE THIS FOR NOW.
     float       _NextFrameFontSizeBase;     // FIXME: Temporary hack until we finish remaining work.
 
-    // Functions
-    IMGUI_API   ImGuiStyle();
-    IMGUI_API   void ScaleAllSizes(float scale_factor); // Scale all spacing/padding/thickness values. Do not scale fonts.
+    // [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    // python adapter for ImGuiStyle::Colors[ImGuiCol_COUNT]
+    // You can query and modify those values (0 <= idxColor < Col_.count)
+    inline IMGUI_API  ImVec4& GetColor(size_t idxColor) { IM_ASSERT( (idxColor >=0) && (idxColor < ImGuiCol_COUNT)); return Colors[idxColor]; }
+    inline IMGUI_API  void SetColor(size_t idxColor, ImVec4 color) { IM_ASSERT( (idxColor >=0) && (idxColor < ImGuiCol_COUNT)); Colors[idxColor] = color; }
+
+#endif
+    // [/ADAPT_IMGUI_BUNDLE]
+
+    IMGUI_API ImGuiStyle();
+    IMGUI_API   void ScaleAllSizes(float scale_factor);
 
     // Obsolete names
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
