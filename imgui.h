@@ -2278,6 +2278,16 @@ struct ImGuiStyle
     ImGuiHoveredFlags HoverFlagsForTooltipMouse;// Default flags when using IsItemHovered(ImGuiHoveredFlags_ForTooltip) or BeginItemTooltip()/SetItemTooltip() while using mouse.
     ImGuiHoveredFlags HoverFlagsForTooltipNav;  // Default flags when using IsItemHovered(ImGuiHoveredFlags_ForTooltip) or BeginItemTooltip()/SetItemTooltip() while using keyboard/gamepad.
 
+    // [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    // python adapter for ImGuiStyle::Colors[ImGuiCol_COUNT]
+    // You can query and modify those values (0 <= idxColor < Col_.count)
+    inline IMGUI_API  ImVec4& GetColor(size_t idxColor) { IM_ASSERT( (idxColor >=0) && (idxColor < ImGuiCol_COUNT)); return Colors[idxColor]; }
+    inline IMGUI_API  void SetColor(size_t idxColor, ImVec4 color) { IM_ASSERT( (idxColor >=0) && (idxColor < ImGuiCol_COUNT)); Colors[idxColor] = color; }
+
+#endif
+    // [/ADAPT_IMGUI_BUNDLE]
+
     IMGUI_API ImGuiStyle();
     IMGUI_API void ScaleAllSizes(float scale_factor);
 };
