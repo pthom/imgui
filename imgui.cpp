@@ -1845,6 +1845,27 @@ ImGuiPlatformIO::ImGuiPlatformIO()
     Platform_LocaleDecimalPoint = '.';
 }
 
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+void ImGuiIO::SetIniFilename(const char* filename)
+{
+    // ImGuiIO::IniFilename is a bare pointer with no storage
+    // Let's add a permanent storage when customized by the user
+    static char sIniFilename[1024];
+    strncpy(sIniFilename, filename, 1024);
+    IniFilename = sIniFilename;
+}
+void ImGuiIO::SetLogFilename(const char* filename)
+{
+    // ImGuiIO::LogFilename is a bare pointer with no storage
+    // Let's add a permanent storage when customized by the user
+    static char sLogFilename[1024];
+    strncpy(sLogFilename, filename, 1024);
+    LogFilename = sLogFilename;
+}
+#endif
+
+
 //-----------------------------------------------------------------------------
 // [SECTION] MISC HELPERS/UTILITIES (Geometry functions)
 //-----------------------------------------------------------------------------
