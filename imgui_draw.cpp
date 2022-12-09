@@ -3339,7 +3339,7 @@ static void UnpackAccumulativeOffsetsIntoRanges(int base_codepoint, const short*
 //-------------------------------------------
 // [ADAPT_IMGUI_BUNDLE]
 //-------------------------------------------
-#ifdef IMGUI_BUNDLE_BUILD_PYTHON
+#ifdef IMGUI_BUNDLE_PYTHON_API
 ImFont* ImFontAtlas::AddFontFromFileTTF_(
     const char* filename,
     float size_pixels,
@@ -3374,7 +3374,21 @@ ImFont* ImFontAtlas::AddFontFromFileTTF_(
     return font;
 }
 
-#endif
+std::vector<ImWchar> ImFontAtlas::_ImWcharRangeToVec(const ImWchar* range)
+{
+    std::vector<ImWchar> r;
+    const ImWchar* v = range;
+    while(*v != 0){
+        r.push_back((int)*v);
+        ++v;
+    }
+
+    r.push_back(0);
+    return r;
+}
+
+
+#endif // IMGUI_BUNDLE_PYTHON_API
 
 
 //-------------------------------------------------------------------------

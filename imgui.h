@@ -3483,6 +3483,26 @@ struct ImFontAtlas
         const ImFontConfig* font_cfg = NULL,
         std::optional<std::vector<ImWchar>> glyph_ranges_as_int_list = std::nullopt);
 
+    std::vector<ImWchar> _ImWcharRangeToVec(const ImWchar* range);
+
+    IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesDefault()                // Basic Latin, Extended Latin
+    { return _ImWcharRangeToVec(GetGlyphRangesDefault()); }
+    IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesGreek()                  // Default + Greek and Coptic
+    { return _ImWcharRangeToVec(GetGlyphRangesGreek()); }
+    IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesKorean()                 // Default + Korean characters
+    { return _ImWcharRangeToVec(GetGlyphRangesKorean()); }
+    IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesJapanese()               // Default + Hiragana, Katakana, Half-Width, Selection of 2999 Ideographs
+    { return _ImWcharRangeToVec(GetGlyphRangesJapanese()); }
+    IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesChineseFull()            // Default + Half-Width + Japanese Hiragana/Katakana + full set of about 21000 CJK Unified Ideographs
+    { return _ImWcharRangeToVec(GetGlyphRangesChineseFull()); }
+    IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesChineseSimplifiedCommon()// Default + Half-Width + Japanese Hiragana/Katakana + set of 2500 CJK Unified Ideographs for common simplified Chinese
+    { return _ImWcharRangeToVec(GetGlyphRangesChineseSimplifiedCommon()); }
+    IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesCyrillic()               // Default + about 400 Cyrillic characters
+    { return _ImWcharRangeToVec(GetGlyphRangesCyrillic()); }
+    IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesThai()                   // Default + Thai characters
+    { return _ImWcharRangeToVec(GetGlyphRangesThai()); }
+    IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesVietnamese()             // Default + Vietnamese characters
+    { return _ImWcharRangeToVec(GetGlyphRangesVietnamese()); }
 #endif
 
     //-------------------------------------------
