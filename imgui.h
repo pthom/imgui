@@ -2362,6 +2362,12 @@ struct ImGuiIO
     ImVector<ImWchar> InputQueueCharacters;         // Queue of _characters_ input (obtained by platform backend). Fill using AddInputCharacter() helper.
 
     IMGUI_API   ImGuiIO();
+
+    // [ADAPT_IMGUI_BUNDLE]
+    #ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API void SetIniFilename(const char* filename);
+    IMGUI_API void SetLogFilename(const char* filename);
+    #endif
 };
 
 //-----------------------------------------------------------------------------
