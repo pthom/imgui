@@ -3335,6 +3335,48 @@ static void UnpackAccumulativeOffsetsIntoRanges(int base_codepoint, const short*
     out_ranges[0] = 0;
 }
 
+
+//-------------------------------------------
+// [ADAPT_IMGUI_BUNDLE]
+//-------------------------------------------
+#ifdef IMGUI_BUNDLE_BUILD_PYTHON
+ImFont* ImFontAtlas::AddFontFromFileTTF_(
+    const char* filename,
+    float size_pixels,
+    const ImFontConfig* font_cfg,
+    std::optional<std::vector<ImWchar>> glyph_ranges_as_int_list)
+{
+    static std::vector<std::vector<ImWchar>> all_glyph_ranges;
+
+    ImFont *font = nullptr;
+
+    if (glyph_ranges_as_int_list.has_value())
+    {
+        // from imgui.h doc:
+        // - If you pass a 'glyph_ranges' array to AddFont*** functions, you need to make sure that your array persist up until the
+        //   atlas is build (when calling GetTexData*** or Build()). We only copy the pointer, not the data.
+        std::vector<ImWchar> glyph_range_this_call;
+        for (ImWchar x : *glyph_ranges_as_int_list)
+            glyph_range_this_call.push_back((ImWchar) x);
+        glyph_range_this_call.push_back(0); // Add a final zero, in case the user forgot
+        all_glyph_ranges.push_back(glyph_range_this_call); // "make sure that your array persist up until the atlas is build"
+
+        // glyph_range_this_call will soon die, let's use a static one...
+        const ImWchar* glyph_range_static = all_glyph_ranges.back().data();
+
+        font = AddFontFromFileTTF(filename, size_pixels, font_cfg, glyph_range_static);
+    }
+    else
+    {
+        font = AddFontFromFileTTF(filename, size_pixels, font_cfg);
+    }
+
+    return font;
+}
+
+#endif
+
+
 //-------------------------------------------------------------------------
 // [SECTION] ImFontAtlas glyph ranges helpers
 //-------------------------------------------------------------------------

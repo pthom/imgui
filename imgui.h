@@ -37,6 +37,12 @@
 //
 // Adaptations for ImGui Bundle are noted with [ADAPT_IMGUI_BUNDLE]
 //
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+#include <vector>   // Used *once* to make the FontAtlas api accessible on python
+#include <optional>
+#endif
+
 
 /*
 
@@ -3466,6 +3472,18 @@ struct ImFontAtlas
     IMGUI_API const ImWchar*    GetGlyphRangesCyrillic();               // Default + about 400 Cyrillic characters
     IMGUI_API const ImWchar*    GetGlyphRangesThai();                   // Default + Thai characters
     IMGUI_API const ImWchar*    GetGlyphRangesVietnamese();             // Default + Vietnamese characters
+
+    //-------------------------------------------
+    // [ADAPT_IMGUI_BUNDLE]
+    //-------------------------------------------
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API ImFont* AddFontFromFileTTF_(
+        const char* filename,
+        float size_pixels,
+        const ImFontConfig* font_cfg = NULL,
+        std::optional<std::vector<ImWchar>> glyph_ranges_as_int_list = std::nullopt);
+
+#endif
 
     //-------------------------------------------
     // [BETA] Custom Rectangles/Glyphs API
