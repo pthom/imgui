@@ -2428,6 +2428,12 @@ struct ImGuiIO
 #endif
 
     IMGUI_API   ImGuiIO();
+
+    // [ADAPT_IMGUI_BUNDLE]
+    #ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API void SetIniFilename(const char* filename);
+    IMGUI_API void SetLogFilename(const char* filename);
+    #endif
 };
 
 //-----------------------------------------------------------------------------
