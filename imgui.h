@@ -3477,7 +3477,7 @@ struct ImFontAtlas
     // [ADAPT_IMGUI_BUNDLE]
     //-------------------------------------------
 #ifdef IMGUI_BUNDLE_PYTHON_API
-    IMGUI_API ImFont* AddFontFromFileTTF_(
+    IMGUI_API ImFont* _AddFontFromFileTTF(
         const char* filename,
         float size_pixels,
         const ImFontConfig* font_cfg = NULL,

@@ -3340,7 +3340,7 @@ static void UnpackAccumulativeOffsetsIntoRanges(int base_codepoint, const short*
 // [ADAPT_IMGUI_BUNDLE]
 //-------------------------------------------
 #ifdef IMGUI_BUNDLE_PYTHON_API
-ImFont* ImFontAtlas::AddFontFromFileTTF_(
+ImFont* ImFontAtlas::_AddFontFromFileTTF(
     const char* filename,
     float size_pixels,
     const ImFontConfig* font_cfg,
