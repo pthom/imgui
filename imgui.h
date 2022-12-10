@@ -40,6 +40,7 @@
 // IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API is always defined (even when building python bindings),
 // but is used as a marker to exclude certain functions from the python binding code.
 #define IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
+// [/ADAPT_IMGUI_BUNDLE]
 
 
 
@@ -2411,6 +2412,14 @@ struct ImGuiTableColumnSortSpecs
     ImGuiSortDirection          SortDirection : 8;  // ImGuiSortDirection_Ascending or ImGuiSortDirection_Descending
 
     ImGuiTableColumnSortSpecs() { memset(this, 0, sizeof(*this)); }
+
+    // [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    inline IMGUI_API ImGuiSortDirection GetSortDirection() { return SortDirection; }
+    inline IMGUI_API void SetSortDirection(ImGuiSortDirection direction) { SortDirection = direction; }
+#endif
+    // [/ADAPT_IMGUI_BUNDLE]
+
 };
 
 // Sorting specifications for a table (often handling sort specs for a single column, occasionally more)
