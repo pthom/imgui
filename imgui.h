@@ -698,6 +698,7 @@ namespace ImGui
     IMGUI_API bool          Selectable(const char* label, bool selected = false, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0, 0)); // "bool selected" carry the selection state (read-only). Selectable() is clicked is returns true so you can modify your selection state. size.x==0.0: use remaining width, size.x>0.0: specify width. size.y==0.0: use label height, size.y>0.0: specify height
 #endif
     IMGUI_API bool          Selectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0, 0));      // "bool* p_selected" point to the selection state (read-write), as a convenient helper.
+// [/ADAPT_IMGUI_BUNDLE]
 
     // Multi-selection system for Selectable(), Checkbox(), TreeNode() functions [BETA]
     // - This enables standard multi-selection/range-selection idioms (CTRL+Mouse/Keyboard, SHIFT+Mouse/Keyboard, etc.) in a way that also allow a clipper to be used.
@@ -756,6 +757,7 @@ namespace ImGui
     IMGUI_API bool          MenuItem(const char* label, const char* shortcut = NULL, bool selected = false, bool enabled = true);  // return true when activated.
 #endif
     IMGUI_API bool          MenuItem(const char* label, const char* shortcut, bool* p_selected, bool enabled = true);              // return true when activated + toggle (*p_selected) if p_selected != NULL
+    // [/ADAPT_IMGUI_BUNDLE]
 
     // Tooltips
     // - Tooltips are windows following the mouse. They do not take focus away.
@@ -2542,10 +2544,12 @@ struct ImGuiIO
     IMGUI_API   ImGuiIO();
 
     // [ADAPT_IMGUI_BUNDLE]
+
     #ifdef IMGUI_BUNDLE_PYTHON_API
     IMGUI_API void SetIniFilename(const char* filename);
     IMGUI_API void SetLogFilename(const char* filename);
     #endif
+    // [/ADAPT_IMGUI_BUNDLE]
 };
 
 //-----------------------------------------------------------------------------
@@ -3492,6 +3496,7 @@ struct ImFontAtlas
     //-------------------------------------------
     // [ADAPT_IMGUI_BUNDLE]
     //-------------------------------------------
+
 #ifdef IMGUI_BUNDLE_PYTHON_API
     IMGUI_API ImFont* _AddFontFromFileTTF(
         const char* filename,
@@ -3520,6 +3525,7 @@ struct ImFontAtlas
     IMGUI_API inline std::vector<ImWchar>    _GetGlyphRangesVietnamese()             // Default + Vietnamese characters
     { return _ImWcharRangeToVec(GetGlyphRangesVietnamese()); }
 #endif
+    // [/ADAPT_IMGUI_BUNDLE]
 
     //-------------------------------------------
     // [BETA] Custom Rectangles/Glyphs API
@@ -3696,6 +3702,7 @@ struct ImGuiViewport
     ImGuiViewport()     { memset(this, 0, sizeof(*this)); }
     // [ADAPT_IMGUI_BUNDLE]
     ~ImGuiViewport() noexcept(false)   { IM_ASSERT(PlatformUserData == NULL && RendererUserData == NULL); }
+    // [/ADAPT_IMGUI_BUNDLE]
 
 
     // Helpers
