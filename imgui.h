@@ -45,6 +45,7 @@
 // IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API is always defined (even when building python bindings),
 // but is used as a marker to exclude certain functions from the python binding code.
 #define IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
+// [/ADAPT_IMGUI_BUNDLE]
 
 
 
