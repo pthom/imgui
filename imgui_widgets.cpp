@@ -6641,7 +6641,6 @@ bool ImGui::Selectable(const char* label, bool selected, ImGuiSelectableFlags fl
     return pressed; //-V1020
 }
 
-#ifndef IMGUI_BUNDLE_BUILD_PYTHON
 bool ImGui::Selectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags, const ImVec2& size_arg)
 {
     if (Selectable(label, *p_selected, flags, size_arg))
@@ -6651,7 +6650,6 @@ bool ImGui::Selectable(const char* label, bool* p_selected, ImGuiSelectableFlags
     }
     return false;
 }
-#endif
 
 
 //-------------------------------------------------------------------------
