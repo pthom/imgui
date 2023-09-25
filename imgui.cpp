@@ -11003,6 +11003,82 @@ void    ImGui::ErrorCheckEndWindowRecover(ImGuiErrorLogCallback log_callback, vo
     }
 }
 
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+namespace Details_CppCallbackAdapters
+{
+    std::string va_list_to_string(const char* fmt, va_list args)
+    {
+        // Initial buffer size
+        constexpr int initial_size = 1000;
+        std::vector<char> buffer(initial_size);
+
+        // Attempt to vsnprintf into our buffer
+        va_list args_copy;  // Make a copy of the va_list since vsnprintf can modify it
+        va_copy(args_copy, args);
+        int required_size = vsnprintf(buffer.data(), buffer.size(), fmt, args_copy);
+        va_end(args_copy);
+
+        // Check for error
+        if (required_size < 0) {
+            return "Error formatting string";  // Or handle error appropriately
+        }
+
+        // If the buffer was not large enough, resize and print again
+        if (required_size >= buffer.size()) {
+            buffer.resize(required_size + 1);  // +1 for the null-terminator
+            vsnprintf(buffer.data(), buffer.size(), fmt, args);
+        }
+
+        return std::string(buffer.data());
+    }
+
+    ImGuiErrorStringCallback gErrorCheckEndFrameRecover = {}; // global callback used by CStyle_ErrorCheckEndFrameRecoverCallback
+    void CStyle_ErrorCheckEndFrameRecoverCallback(void* user_data, const char* fmt, ...)
+    {
+        if (! gErrorCheckEndFrameRecover)
+            return;
+
+        va_list args;
+        va_start(args, fmt);
+        std::string message = va_list_to_string(fmt, args);
+        va_end(args);
+
+        gErrorCheckEndFrameRecover(message);
+    }
+
+    ImGuiErrorStringCallback gErrorCheckEndWindowRecover = {}; // global callback used by CStyle_ErrorCheckEndFrameRecoverCallback
+    void CStyle_ErrorCheckEndWindowRecover(void* user_data, const char* fmt, ...)
+    {
+        if (! gErrorCheckEndWindowRecover)
+            return;
+
+        va_list args;
+        va_start(args, fmt);
+        std::string message = va_list_to_string(fmt, args);
+        va_end(args);
+
+        gErrorCheckEndWindowRecover(message);
+    }
+} // namespace Details_CppAdapters
+
+void    ImGui::ErrorCheckEndFrameRecover(ImGuiErrorStringCallback callback)
+{
+    Details_CppCallbackAdapters::gErrorCheckEndFrameRecover = callback;
+    ImGui::ErrorCheckEndFrameRecover(Details_CppCallbackAdapters::CStyle_ErrorCheckEndFrameRecoverCallback);
+    Details_CppCallbackAdapters::gErrorCheckEndFrameRecover = {};
+}
+
+void    ImGui::ErrorCheckEndWindowRecover(ImGuiErrorStringCallback callback)
+{
+    Details_CppCallbackAdapters::gErrorCheckEndWindowRecover = callback;
+    ImGui::ErrorCheckEndWindowRecover(Details_CppCallbackAdapters::CStyle_ErrorCheckEndWindowRecover);
+    Details_CppCallbackAdapters::gErrorCheckEndWindowRecover = {};
+}
+#endif // #ifdef IMGUI_BUNDLE_PYTHON_API
+// [/ADAPT_IMGUI_BUNDLE]
+
+
 // Save current stack sizes for later compare
 void ImGuiStackSizes::SetToContextState(ImGuiContext* ctx)
 {
