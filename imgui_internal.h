@@ -54,6 +54,15 @@ Index of this file:
 #include "imgui.h"
 #endif
 
+//
+// Adaptations for ImGui Bundle are noted with [ADAPT_IMGUI_BUNDLE]
+//
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+#include <functional>
+#endif
+// [/ADAPT_IMGUI_BUNDLE]
+
 #include <stdio.h>      // FILE*, sscanf
 #include <stdlib.h>     // NULL, malloc, free, qsort, atoi, atof
 #include <math.h>       // sqrtf, fabsf, fmodf, powf, floorf, ceilf, cosf, sinf
@@ -218,6 +227,11 @@ typedef int ImGuiTooltipFlags;          // -> enum ImGuiTooltipFlags_       // F
 typedef int ImGuiTypingSelectFlags;     // -> enum ImGuiTypingSelectFlags_  // Flags: for GetTypingSelectRequest()
 typedef int ImGuiWindowBgClickFlags;    // -> enum ImGuiWindowBgClickFlags_ // Flags: for overriding behavior of clicking on window background/void.
 typedef int ImGuiWindowRefreshFlags;    // -> enum ImGuiWindowRefreshFlags_ // Flags: for SetNextWindowRefreshPolicy()
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+using ImGuiErrorStringCallback = std::function<void(const std::string&)>;
+#endif
+// [/ADAPT_IMGUI_BUNDLE]
 
 // Table column indexing
 typedef ImS16 ImGuiTableColumnIdx;
@@ -4042,6 +4056,13 @@ namespace ImGui
 
     // Debug Tools
     IMGUI_API void          DebugAllocHook(ImGuiDebugAllocInfo* info, int frame_count, void* ptr, size_t size); // size >= 0 : alloc, size = -1 : free
+    // [ADAPT_IMGUI_BUNDLE]
+    #ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API void          ErrorCheckEndFrameRecover(ImGuiErrorStringCallback callback);
+    IMGUI_API void          ErrorCheckEndWindowRecover(ImGuiErrorStringCallback callback);
+    #endif
+    // [/ADAPT_IMGUI_BUNDLE]
+
     IMGUI_API void          DebugDrawCursorPos(ImU32 col = IM_COL32(255, 0, 0, 255));
     IMGUI_API void          DebugDrawLineExtents(ImU32 col = IM_COL32(255, 0, 0, 255));
     IMGUI_API void          DebugDrawItemRect(ImU32 col = IM_COL32(255, 0, 0, 255));
