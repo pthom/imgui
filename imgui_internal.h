@@ -48,6 +48,15 @@ Index of this file:
 #include "imgui.h"
 #endif
 
+//
+// Adaptations for ImGui Bundle are noted with [ADAPT_IMGUI_BUNDLE]
+//
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+#include <functional>
+#endif
+// [/ADAPT_IMGUI_BUNDLE]
+
 #include <stdio.h>      // FILE*, sscanf
 #include <stdlib.h>     // NULL, malloc, free, qsort, atoi, atof
 #include <math.h>       // sqrtf, fabsf, fmodf, powf, floorf, ceilf, cosf, sinf
@@ -184,6 +193,11 @@ typedef int ImGuiTooltipFlags;          // -> enum ImGuiTooltipFlags_       // F
 typedef int ImGuiTypingSelectFlags;     // -> enum ImGuiTypingSelectFlags_  // Flags: for GetTypingSelectRequest()
 
 typedef void (*ImGuiErrorLogCallback)(void* user_data, const char* fmt, ...);
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+using ImGuiErrorStringCallback = std::function<void(const std::string&)>;
+#endif
+// [/ADAPT_IMGUI_BUNDLE]
 
 //-----------------------------------------------------------------------------
 // [SECTION] Context pointer
@@ -3668,6 +3682,13 @@ namespace ImGui
     IMGUI_API void          ErrorCheckEndFrameRecover(ImGuiErrorLogCallback log_callback, void* user_data = NULL);
     IMGUI_API void          ErrorCheckEndWindowRecover(ImGuiErrorLogCallback log_callback, void* user_data = NULL);
     IMGUI_API void          ErrorCheckUsingSetCursorPosToExtendParentBoundaries();
+    // [ADAPT_IMGUI_BUNDLE]
+    #ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API void          ErrorCheckEndFrameRecover(ImGuiErrorStringCallback callback);
+    IMGUI_API void          ErrorCheckEndWindowRecover(ImGuiErrorStringCallback callback);
+    #endif
+    // [/ADAPT_IMGUI_BUNDLE]
+
     IMGUI_API void          DebugDrawCursorPos(ImU32 col = IM_COL32(255, 0, 0, 255));
     IMGUI_API void          DebugDrawLineExtents(ImU32 col = IM_COL32(255, 0, 0, 255));
     IMGUI_API void          DebugDrawItemRect(ImU32 col = IM_COL32(255, 0, 0, 255));
