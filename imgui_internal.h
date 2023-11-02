@@ -60,6 +60,7 @@ Index of this file:
 // [ADAPT_IMGUI_BUNDLE]
 #ifdef IMGUI_BUNDLE_PYTHON_API
 #include <functional>
+#include <string>
 #endif
 // [/ADAPT_IMGUI_BUNDLE]
 
@@ -2227,7 +2228,16 @@ struct ImGuiWindowSettings
     bool        WantDelete;     // Set to invalidate/delete the settings entry
 
     ImGuiWindowSettings()       { memset((void*)this, 0, sizeof(*this)); DockOrder = -1; }
+
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    std::string GetNameStr()             { return std::string((const char*)(this + 1)); }
+#endif
+#ifdef IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
     char* GetName()             { return (char*)(this + 1); }
+#endif
+// [/ADAPT_IMGUI_BUNDLE]
+
 };
 
 struct ImGuiSettingsHandler
