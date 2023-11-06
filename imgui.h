@@ -41,6 +41,7 @@
 #ifdef IMGUI_BUNDLE_PYTHON_API
 #include <vector>   // Used *once* to make the FontAtlas api accessible on python
 #include <optional>
+#include <functional>
 #endif
 // IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API is always defined (even when building python bindings),
 // but is used as a marker to exclude certain functions from the python binding code.
