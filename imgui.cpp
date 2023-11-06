@@ -4394,12 +4394,27 @@ void ImGui::DebugAllocHook(ImGuiDebugAllocInfo* info, int frame_count, void* ptr
 const char* ImGui::GetClipboardText()
 {
     ImGuiContext& g = *GImGui;
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    static std::string clipboard_content;
+    if (g.IO.GetClipboardTextFn_)
+    {
+        clipboard_content = g.IO.GetClipboardTextFn_();
+        return clipboard_content.c_str();
+    }
+#endif
     return g.IO.GetClipboardTextFn ? g.IO.GetClipboardTextFn(g.IO.ClipboardUserData) : "";
 }
 
 void ImGui::SetClipboardText(const char* text)
 {
     ImGuiContext& g = *GImGui;
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    if (g.IO.SetClipboardTextFn_)
+    {
+        g.IO.SetClipboardTextFn_(std::string(text));
+        return;
+    }
+#endif
     if (g.IO.SetClipboardTextFn)
         g.IO.SetClipboardTextFn(g.IO.ClipboardUserData, text);
 }
