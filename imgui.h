@@ -36,6 +36,7 @@
 #ifdef IMGUI_BUNDLE_PYTHON_API
 #include <vector>   // Used *once* to make the FontAtlas api accessible on python
 #include <optional>
+#include <functional>
 #endif
 // IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API is always defined (even when building python bindings),
 // but is used as a marker to exclude certain functions from the python binding code.
@@ -2280,15 +2281,29 @@ struct ImGuiIO
     void*       BackendRendererUserData;        // = NULL           // User data for renderer backend
     void*       BackendLanguageUserData;        // = NULL           // User data for non C++ programming language backend
 
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef  IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
     // Optional: Access OS clipboard
     // (default to use native Win32 clipboard on Windows, otherwise uses a private clipboard. Override to access OS clipboard on other architectures)
     const char* (*GetClipboardTextFn)(void* user_data);
     void        (*SetClipboardTextFn)(void* user_data, const char* text);
     void*       ClipboardUserData;
+#endif
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    // Optional: Access OS clipboard
+    // (default to use native Win32 clipboard on Windows, otherwise uses a private clipboard. Override to access OS clipboard on other architectures)
+    std::function<std::string()> GetClipboardTextFn_;
+    std::function<void(std::string)> SetClipboardTextFn_;
+#endif
+// [/ADAPT_IMGUI_BUNDLE]
 
     // Optional: Notify OS Input Method Editor of the screen position of your cursor for text input position (e.g. when using Japanese/Chinese IME on Windows)
     // (default to use native imm32 api on Windows)
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    std::function<void(ImGuiViewport*, ImGuiPlatformImeData*)> SetPlatformImeDataFn;
+#else
     void        (*SetPlatformImeDataFn)(ImGuiViewport* viewport, ImGuiPlatformImeData* data);
+#endif
 
     // Optional: Platform locale
     ImWchar     PlatformLocaleDecimalPoint;     // '.'              // [Experimental] Configure decimal point e.g. '.' or ',' useful for some languages (e.g. German), generally pulled from *localeconv()->decimal_point
