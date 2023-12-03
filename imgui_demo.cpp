@@ -9160,12 +9160,8 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
 
         void ReadSourceCodeContent(const char* source_file)
         {
-            FILE *f = fopen(source_file, "r");
-            if (!f)
-            {
-                SourceCode = NULL;
-                return;
-            }
+            FILE *f = fopen(source_file, "rb"); // binary mode for windows (do not translate \n)
+            IM_ASSERT(f != NULL);
             fseek(f, 0, SEEK_END);
             size_t file_size = (size_t) ftell(f);
             SourceCode = (char *) IM_ALLOC((file_size + 1)* sizeof(char));
