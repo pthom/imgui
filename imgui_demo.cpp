@@ -9258,11 +9258,14 @@ void ImBrowseToUrl(const char *url)
 #elif TARGET_OS_OSX
     char cmd[1024];
     snprintf(cmd, 1024, "open %s", url);
-    system(cmd);
+    int result = system(cmd);
+    if (result != 0)
+        fprintf(stderr, "Error when calling system(%s)\n", cmd);
 #elif defined(__linux__)
     char cmd[1024];
-        snprintf(cmd, 1024, "xdg-open %s", url);
-        system(cmd);
+    int result = system(cmd);
+    if (result != 0)
+        fprintf(stderr, "Please install xdg-open to open links\n");
 #endif
 }
 
