@@ -987,6 +987,17 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
     }
 }
 
+#ifdef IMGUI_BUNDLE_PYTHON_API
+void  ImDrawList::AddPolyline(const std::vector<ImVec2>& points, ImU32 col, ImDrawFlags flags, float thickness)
+{
+    AddPolyline(points.data(), (int)points.size(), col, flags, thickness);
+}
+void  ImDrawList::AddConvexPolyFilled(const std::vector<ImVec2>& points, ImU32 col)
+{
+    AddConvexPolyFilled(points.data(), (int)points.size(), col);
+}
+#endif
+
 // - We intentionally avoid using ImVec2 and its math operators here to reduce cost to a minimum for debug/non-inlined builds.
 // - Filled shapes must always use clockwise winding order. The anti-aliasing fringe depends on it. Counter-clockwise shapes will have "inward" anti-aliasing.
 void ImDrawList::AddConvexPolyFilled(const ImVec2* points, const int points_count, ImU32 col)
