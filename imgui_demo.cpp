@@ -9520,6 +9520,12 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
             ImGui::End();
         }
 
+        // [Bundle]
+        void SetShowPythonCode(bool showPythonCode)
+        {
+            ShowPythonCode = showPythonCode;
+        }
+
     private:
         void ReadSource(const char* source_file)
         {
@@ -9712,6 +9718,13 @@ namespace ImGuiDemoMarkerCodeViewer
         ImGuiDemoMarkerCodeViewer_Impl::GDemoCodeWindow().NavigateTo(line_number, section);
     }
 }
+
+// [Bundle]
+void ImGuiDemoSetShowPythonCode(bool showPythonCode)
+{
+    ImGuiDemoMarkerCodeViewer_Impl::GDemoCodeWindow().SetShowPythonCode(showPythonCode);
+}
+
 
 // [sub section]  BrowseToUrl()
 // A platform specific utility to open an url in a browser
