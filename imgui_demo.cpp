@@ -9109,9 +9109,10 @@ bool ImGuiDemoMarkerHighlightZone(int line_number);
 namespace ImGuiDemoMarkerCodeViewer
 {
     void ShowCodeViewer();
-    void NavigateTo(int line_number);
+    void NavigateTo(int line_number, const char* section);
 }
-#define IMGUI_DEMO_GITHUB_URL "https://github.com/pthom/imgui/blob/DemoCode/imgui_demo.cpp#L"
+#define IMGUI_DEMO_GITHUB_URL "https://github.com/pthom/imgui/blob/imgui_bundle/imgui_demo.cpp#L"
+#define IMGUI_DEMO_GITHUB_URL_PYTHON "https://github.com/pthom/imgui/blob/imgui_bundle/imgui_demo.py#L"
 void ImBrowseToUrl(const char *url);
 
 // [sub section] ImGuiDemoMarker_GuiToggle()
@@ -9148,7 +9149,7 @@ void ImGuiDemoMarkerCallback_Default(const char* /*file*/, int line, const char*
             "IMGUI_DEMO_MARKER(\"%s\") at imgui_demo.cpp:%d\n\n"
             "Press \"Esc\" to exit this mode",
             section, line);
-        ImGuiDemoMarkerCodeViewer::NavigateTo(line);
+        ImGuiDemoMarkerCodeViewer::NavigateTo(line, section);
     }
 }
 
@@ -9453,10 +9454,23 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
                 IM_FREE(SourceLineNumbersStr);
         }
 
-        void NavigateTo(int line_number)
+        void NavigateTo(int line_number, const char* section)
         {
             IsWindowOpened = true;
             EditorLine_NavigateTo = line_number;
+
+            // [Bundle]
+            if (ShowPythonCode)
+            {
+                for(const auto& tag: TagsPython)
+                {
+                    if (strcmp(tag.Tag, section) == 0)
+                    {
+                        EditorLine_NavigateTo = tag.LineNumber;
+                        break;
+                    }
+                }
+            }
         }
 
         void Gui()
@@ -9480,18 +9494,23 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
                                         ImGuiCond_FirstUseEver);
                 ImGui::SetNextWindowSize(ImVec2(520.f, 680), ImGuiCond_FirstUseEver);
             }
-            if (ImGui::Begin("imgui_demo.cpp - code", &IsWindowOpened))
+            if (ImGui::Begin("imgui_demo - code", &IsWindowOpened))
             {
+                ImGui::Checkbox("Show Python Code", &ShowPythonCode);
+
                 GuiSearch();
 
                 if (ImGui::Button("Open Github"))
                 {
                     char url[1024];
-                    snprintf(url, 1024, "%s%i", IMGUI_DEMO_GITHUB_URL, EditorLine_LastSelected);
+                    if (ShowPythonCode)
+                        snprintf(url, 1024, "%s%i", IMGUI_DEMO_GITHUB_URL_PYTHON, EditorLine_LastSelected);
+                    else
+                        snprintf(url, 1024, "%s%i", IMGUI_DEMO_GITHUB_URL, EditorLine_LastSelected);
                     ImBrowseToUrl(url);
                 }
                 ImGui::SameLine();
-                ImGui::TextDisabled("(view imgui_demo.cpp on github at line %i)", EditorLine_LastSelected);
+                ImGui::TextDisabled("(view imgui_demo on github at line %i)", EditorLine_LastSelected);
 
                 ImGui::BeginChild("Code Child");
                 if (EditorLine_NavigateTo >= 0)
@@ -9501,9 +9520,20 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
                     EditorLine_LastSelected = EditorLine_NavigateTo;
                     EditorLine_NavigateTo = -1;
                 }
-                ImGui::TextUnformatted(SourceLineNumbersStr);
-                ImGui::SameLine();
-                ImGui::TextUnformatted(SourceCode);
+
+                //[Bundle]
+                if (ShowPythonCode && SourceCodePython != NULL)
+                {
+                    ImGui::TextUnformatted(SourceLineNumbersPythonStr);
+                    ImGui::SameLine();
+                    ImGui::TextUnformatted(SourceCodePython);
+                }
+                else
+                {
+                    ImGui::TextUnformatted(SourceLineNumbersStr);
+                    ImGui::SameLine();
+                    ImGui::TextUnformatted(SourceCode);
+                }
 
                 ImGui::EndChild();
             }
@@ -9518,6 +9548,21 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
             {
                 Tags = DemoMarkerTagsParser::ParseDemoMarkerTags(SourceCode);
                 MakeSourceLineNumbersStr();
+            }
+
+            // [Bundle]
+            // Read python code in imgui_demo.py
+            {
+                // we replace source_file extension by .py
+                char source_file_python[256];
+                strncpy(source_file_python, source_file, 256);
+                strcpy(strrchr(source_file_python, '.'), ".py");
+                SourceCodePython = ReadSourceCodeContent(source_file_python);
+                if (SourceCodePython != NULL)
+                {
+                    TagsPython = DemoMarkerTagsParser::ParseDemoMarkerTags(SourceCodePython);
+                    MakeSourceLineNumbersStrPython();
+                }
             }
         }
 
@@ -9556,11 +9601,15 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
 
             if (Filter.IsActive() && ImGui::IsItemFocused())
                 ShowFilterResults = true;
+
+            // [Bundle]
+            auto & currentTags = ShowPythonCode ? TagsPython : Tags;
+
             if (ShowFilterResults)
             {
-                for (int i = 0; i < Tags.size(); ++i)
+                for (int i = 0; i < currentTags.size(); ++i)
                 {
-                    const DemoMarkerTagsParser::DemoMarkerTag &tag = Tags[i];
+                    const DemoMarkerTagsParser::DemoMarkerTag &tag = currentTags[i];
                     if (Filter.PassFilter(tag.Tag))
                     {
                         if (ImGui::Button(tag.Tag))
@@ -9621,6 +9670,31 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
             }
         }
 
+        // [Bundle] / dumb copy-paste, for ease of future maintenance (rebase)
+        void MakeSourceLineNumbersStrPython()
+        {
+            size_t nb_source_lines = 0;
+            {
+                char *c = SourceCodePython;
+                while (*c != '\0')
+                {
+                    if (*c == '\n')
+                        ++nb_source_lines;
+                    ++c;
+                }
+            }
+
+            size_t line_length = 6;
+            SourceLineNumbersPythonStr = (char *) IM_ALLOC((nb_source_lines * line_length + 1) * sizeof(char));
+            SourceLineNumbersPythonStr[0] = '\0';
+            for (size_t i = 0; i < nb_source_lines; ++i)
+            {
+                char line_content[100];
+                snprintf(line_content, line_length + 1, "%5i\n", (int) (i + 1));
+                strcat(SourceLineNumbersPythonStr, line_content);
+            }
+        }
+
     private:
         char *SourceCode;                // Full source code of imgui_demo.cpp, read from its compile time location
         char *SourceLineNumbersStr;      // A String that contains line numbers, displayed to the left of the source code
@@ -9631,6 +9705,12 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
         ImVector<DemoMarkerTagsParser::DemoMarkerTag> Tags;
         ImGuiTextFilter Filter;
         bool ShowFilterResults;
+
+        // [Bundle]
+        bool ShowPythonCode = false;
+        char *SourceCodePython;
+        char *SourceLineNumbersPythonStr;
+        ImVector<DemoMarkerTagsParser::DemoMarkerTag> TagsPython;
     };
 
     DemoCodeWindow& GDemoCodeWindow()
@@ -9647,9 +9727,9 @@ namespace ImGuiDemoMarkerCodeViewer
     {
         ImGuiDemoMarkerCodeViewer_Impl::GDemoCodeWindow().Gui();
     }
-    void NavigateTo(int line_number)
+    void NavigateTo(int line_number, const char* section)
     {
-        ImGuiDemoMarkerCodeViewer_Impl::GDemoCodeWindow().NavigateTo(line_number);
+        ImGuiDemoMarkerCodeViewer_Impl::GDemoCodeWindow().NavigateTo(line_number, section);
     }
 }
 
