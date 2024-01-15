@@ -2790,6 +2790,17 @@ void ImGui::TableDrawBorders(ImGuiTable* table)
 // - TableSortSpecsBuild() [Internal]
 //-------------------------------------------------------------------------
 
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+const ImGuiTableColumnSortSpecs& ImGuiTableSortSpecs::GetSpecs(size_t idx) const
+{
+    IM_ASSERT((idx >= 0) && (idx < SpecsCount));
+    return Specs[idx];
+}
+#endif
+// [/ADAPT_IMGUI_BUNDLE]
+
+
 // Return NULL if no sort specs (most often when ImGuiTableFlags_Sortable is not set)
 // When 'sort_specs->SpecsDirty == true' you should sort your data. It will be true when sorting specs have
 // changed since last call, or the first time. Make sure to set 'SpecsDirty = false' after sorting,
