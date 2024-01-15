@@ -5281,6 +5281,29 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
         return value_changed;
 }
 
+
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+bool ImGui::InputTextEx(const char* label, const char* hint, std::string* s, const ImVec2& size_arg, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback)
+{
+    char buffer[8000];
+    strncpy(buffer, s->c_str(), 8000);
+    bool result = ImGui::InputTextEx(label, hint, buffer, 8000, size_arg, flags, callback, nullptr);
+    *s = buffer;
+    return result;
+}
+bool ImGui::TempInputText(const ImRect& bb, ImGuiID id, const char* label, std::string* s, ImGuiInputTextFlags flags)
+{
+    char buffer[8000];
+    strncpy(buffer, s->c_str(), 8000);
+    bool result = ImGui::TempInputText(bb, id, label, buffer, 8000, flags);
+    *s = buffer;
+    return result;
+}
+#endif
+// [/ADAPT_IMGUI_BUNDLE]
+
+
 void ImGui::DebugNodeInputTextState(ImGuiInputTextState* state)
 {
 #ifndef IMGUI_DISABLE_DEBUG_TOOLS
