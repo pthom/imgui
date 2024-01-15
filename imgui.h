@@ -2275,6 +2275,12 @@ struct ImGuiTableSortSpecs
     bool                        SpecsDirty;     // Set to true when specs have changed since last time! Use this to sort again, then clear the flag.
 
     ImGuiTableSortSpecs()       { memset((void*)this, 0, sizeof(*this)); }
+
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API const ImGuiTableColumnSortSpecs& GetSpecs(size_t idx) const;
+#endif
+// [/ADAPT_IMGUI_BUNDLE]
 };
 
 // Sorting specification for one column of a table (sizeof == 12 bytes)
@@ -2286,6 +2292,13 @@ struct ImGuiTableColumnSortSpecs
     ImGuiSortDirection          SortDirection;      // ImGuiSortDirection_Ascending or ImGuiSortDirection_Descending
 
     ImGuiTableColumnSortSpecs() { memset((void*)this, 0, sizeof(*this)); }
+
+    // [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    inline IMGUI_API ImGuiSortDirection GetSortDirection() { return SortDirection; }
+    inline IMGUI_API void SetSortDirection(ImGuiSortDirection direction) { SortDirection = direction; }
+#endif
+    // [/ADAPT_IMGUI_BUNDLE]
 };
 
 //-----------------------------------------------------------------------------
