@@ -124,6 +124,8 @@ Index of this file:
 #define IMGUI_ENABLE_STB_TRUETYPE
 #endif
 
+#include <stdio.h>
+
 //-----------------------------------------------------------------------------
 // [SECTION] Forward declarations
 //-----------------------------------------------------------------------------
@@ -2426,201 +2428,399 @@ struct ImGuiContext
 
     ImGuiContext(ImFontAtlas* shared_font_atlas)
     {
+        printf("ImGuiContext::ImGuiContext() 1\n");
         IO.Ctx = this;
+        printf("ImGuiContext::ImGuiContext() 2\n");
         InputTextState.Ctx = this;
+        printf("ImGuiContext::ImGuiContext() 3\n");
 
         Initialized = false;
+        printf("ImGuiContext::ImGuiContext() 4\n");
         ConfigFlagsCurrFrame = ConfigFlagsLastFrame = ImGuiConfigFlags_None;
+        printf("ImGuiContext::ImGuiContext() 5\n");
         FontAtlasOwnedByContext = shared_font_atlas ? false : true;
+        printf("ImGuiContext::ImGuiContext() 6\n");
         Font = NULL;
+        printf("ImGuiContext::ImGuiContext() 7\n");
         FontSize = FontBaseSize = 0.0f;
+        printf("ImGuiContext::ImGuiContext() 8\n");
         IO.Fonts = shared_font_atlas ? shared_font_atlas : IM_NEW(ImFontAtlas)();
+        printf("ImGuiContext::ImGuiContext() 9\n");
         Time = 0.0f;
+        printf("ImGuiContext::ImGuiContext() 10\n");
         FrameCount = 0;
+        printf("ImGuiContext::ImGuiContext() 11\n");
         FrameCountEnded = FrameCountPlatformEnded = FrameCountRendered = -1;
+        printf("ImGuiContext::ImGuiContext() 12\n");
         WithinFrameScope = WithinFrameScopeWithImplicitWindow = WithinEndChild = false;
+        printf("ImGuiContext::ImGuiContext() 13\n");
         GcCompactAll = false;
+        printf("ImGuiContext::ImGuiContext() 14\n");
         TestEngineHookItems = false;
+        printf("ImGuiContext::ImGuiContext() 15\n");
         TestEngine = NULL;
+        printf("ImGuiContext::ImGuiContext() 16\n");
 
         InputEventsNextMouseSource = ImGuiMouseSource_Mouse;
+        printf("ImGuiContext::ImGuiContext() 17\n");
         InputEventsNextEventId = 1;
+        printf("ImGuiContext::ImGuiContext() 18\n");
+
 
         WindowsActiveCount = 0;
+        printf("ImGuiContext::ImGuiContext() 19\n");
         CurrentWindow = NULL;
+        printf("ImGuiContext::ImGuiContext() 20\n");
         HoveredWindow = NULL;
+        printf("ImGuiContext::ImGuiContext() 21\n");
         HoveredWindowUnderMovingWindow = NULL;
+        printf("ImGuiContext::ImGuiContext() 22\n");
         MovingWindow = NULL;
+        printf("ImGuiContext::ImGuiContext() 23\n");
+
+        printf("ImGui::CreateContext 24");
+
+        printf("ImGui::CreateContext 25");
         WheelingWindow = NULL;
+        printf("ImGui::CreateContext 26");
         WheelingWindowStartFrame = WheelingWindowScrolledFrame = -1;
+        printf("ImGui::CreateContext 27");
         WheelingWindowReleaseTimer = 0.0f;
+        printf("ImGui::CreateContext 28");
 
+        printf("ImGui::CreateContext 29");
         DebugHookIdInfo = 0;
+        printf("ImGui::CreateContext 30");
         HoveredId = HoveredIdPreviousFrame = 0;
+        printf("ImGui::CreateContext 31");
         HoveredIdAllowOverlap = false;
+        printf("ImGui::CreateContext 32");
         HoveredIdDisabled = false;
+        printf("ImGui::CreateContext 33");
         HoveredIdTimer = HoveredIdNotActiveTimer = 0.0f;
+        printf("ImGui::CreateContext 34");
         ActiveId = 0;
+        printf("ImGui::CreateContext 35");
         ActiveIdIsAlive = 0;
+        printf("ImGui::CreateContext 36");
         ActiveIdTimer = 0.0f;
+        printf("ImGui::CreateContext 37");
         ActiveIdIsJustActivated = false;
+        printf("ImGui::CreateContext 38");
         ActiveIdAllowOverlap = false;
+        printf("ImGui::CreateContext 39");
         ActiveIdNoClearOnFocusLoss = false;
+        printf("ImGui::CreateContext 40");
         ActiveIdHasBeenPressedBefore = false;
+        printf("ImGui::CreateContext 41");
         ActiveIdHasBeenEditedBefore = false;
+        printf("ImGui::CreateContext 42");
         ActiveIdHasBeenEditedThisFrame = false;
+        printf("ImGui::CreateContext 43");
         ActiveIdClickOffset = ImVec2(-1, -1);
+        printf("ImGui::CreateContext 44");
         ActiveIdWindow = NULL;
+        printf("ImGui::CreateContext 45");
         ActiveIdSource = ImGuiInputSource_None;
+        printf("ImGui::CreateContext 46");
         ActiveIdMouseButton = -1;
+        printf("ImGui::CreateContext 47");
         ActiveIdPreviousFrame = 0;
+        printf("ImGui::CreateContext 48");
         ActiveIdPreviousFrameIsAlive = false;
+        printf("ImGui::CreateContext 49");
         ActiveIdPreviousFrameHasBeenEditedBefore = false;
+        printf("ImGui::CreateContext 50");
         ActiveIdPreviousFrameWindow = NULL;
+        printf("ImGui::CreateContext 51");
         LastActiveId = 0;
+        printf("ImGui::CreateContext 52");
         LastActiveIdTimer = 0.0f;
+        printf("ImGui::CreateContext 53");
 
+        printf("ImGui::CreateContext 54");
         LastKeyboardKeyPressTime = LastKeyModsChangeTime = LastKeyModsChangeFromNoneTime = -1.0;
+        printf("ImGui::CreateContext 55");
 
+        printf("ImGui::CreateContext 56");
         ActiveIdUsingNavDirMask = 0x00;
+        printf("ImGui::CreateContext 57");
         ActiveIdUsingAllKeyboardKeys = false;
+        printf("ImGui::CreateContext 58");
 #ifndef IMGUI_DISABLE_OBSOLETE_KEYIO
+        printf("ImGui::CreateContext 59");
         ActiveIdUsingNavInputMask = 0x00;
+        printf("ImGui::CreateContext 60");
 #endif
+        printf("ImGui::CreateContext 61");
 
+        printf("ImGui::CreateContext 62");
         CurrentFocusScopeId = 0;
+        printf("ImGui::CreateContext 63");
         CurrentItemFlags = ImGuiItemFlags_None;
+        printf("ImGui::CreateContext 64");
         DebugShowGroupRects = false;
+        printf("ImGui::CreateContext 65");
         BeginMenuCount = 0;
+        printf("ImGui::CreateContext 66");
 
+        printf("ImGui::CreateContext 67");
         CurrentDpiScale = 0.0f;
+        printf("ImGui::CreateContext 68");
         CurrentViewport = NULL;
+        printf("ImGui::CreateContext 69");
         MouseViewport = MouseLastHoveredViewport = NULL;
+        printf("ImGui::CreateContext 70");
         PlatformLastFocusedViewportId = 0;
+        printf("ImGui::CreateContext 71");
         ViewportCreatedCount = PlatformWindowsCreatedCount = 0;
+        printf("ImGui::CreateContext 72");
         ViewportFocusedStampCount = 0;
+        printf("ImGui::CreateContext 73");
 
+        printf("ImGui::CreateContext 74");
         NavWindow = NULL;
+        printf("ImGui::CreateContext 75");
         NavId = NavFocusScopeId = NavActivateId = NavActivateDownId = NavActivatePressedId = 0;
+        printf("ImGui::CreateContext 76");
         NavJustMovedToId = NavJustMovedToFocusScopeId = NavNextActivateId = 0;
+        printf("ImGui::CreateContext 77");
         NavActivateFlags = NavNextActivateFlags = ImGuiActivateFlags_None;
+        printf("ImGui::CreateContext 78");
         NavJustMovedToKeyMods = ImGuiMod_None;
+        printf("ImGui::CreateContext 79");
         NavInputSource = ImGuiInputSource_Keyboard;
+        printf("ImGui::CreateContext 80");
         NavLayer = ImGuiNavLayer_Main;
+        printf("ImGui::CreateContext 81");
         NavLastValidSelectionUserData = ImGuiSelectionUserData_Invalid;
+        printf("ImGui::CreateContext 82");
         NavIdIsAlive = false;
+        printf("ImGui::CreateContext 83");
         NavMousePosDirty = false;
+        printf("ImGui::CreateContext 84");
         NavDisableHighlight = true;
+        printf("ImGui::CreateContext 85");
         NavDisableMouseHover = false;
+        printf("ImGui::CreateContext 86");
         NavAnyRequest = false;
+        printf("ImGui::CreateContext 87");
         NavInitRequest = false;
+        printf("ImGui::CreateContext 88");
         NavInitRequestFromMove = false;
+        printf("ImGui::CreateContext 89");
         NavMoveSubmitted = false;
+        printf("ImGui::CreateContext 90");
         NavMoveScoringItems = false;
+        printf("ImGui::CreateContext 91");
         NavMoveForwardToNextFrame = false;
+        printf("ImGui::CreateContext 92");
         NavMoveFlags = ImGuiNavMoveFlags_None;
+        printf("ImGui::CreateContext 93");
         NavMoveScrollFlags = ImGuiScrollFlags_None;
+        printf("ImGui::CreateContext 94");
         NavMoveKeyMods = ImGuiMod_None;
+        printf("ImGui::CreateContext 95");
         NavMoveDir = NavMoveDirForDebug = NavMoveClipDir = ImGuiDir_None;
+        printf("ImGui::CreateContext 96");
         NavScoringDebugCount = 0;
+        printf("ImGui::CreateContext 97");
         NavTabbingDir = 0;
+        printf("ImGui::CreateContext 98");
         NavTabbingCounter = 0;
+        printf("ImGui::CreateContext 99");
 
+        printf("ImGui::CreateContext 100");
         ConfigNavWindowingKeyNext = ImGuiMod_Ctrl | ImGuiKey_Tab;
+        printf("ImGui::CreateContext 101");
         ConfigNavWindowingKeyPrev = ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Tab;
+        printf("ImGui::CreateContext 102");
         NavWindowingTarget = NavWindowingTargetAnim = NavWindowingListWindow = NULL;
+        printf("ImGui::CreateContext 103");
         NavWindowingTimer = NavWindowingHighlightAlpha = 0.0f;
+        printf("ImGui::CreateContext 104");
         NavWindowingToggleLayer = false;
+        printf("ImGui::CreateContext 105");
 
+        printf("ImGui::CreateContext 106");
         DimBgRatio = 0.0f;
+        printf("ImGui::CreateContext 107");
 
+        printf("ImGui::CreateContext 108");
         DragDropActive = DragDropWithinSource = DragDropWithinTarget = false;
+        printf("ImGui::CreateContext 109");
         DragDropSourceFlags = ImGuiDragDropFlags_None;
+        printf("ImGui::CreateContext 110");
         DragDropSourceFrameCount = -1;
+        printf("ImGui::CreateContext 111");
         DragDropMouseButton = -1;
+        printf("ImGui::CreateContext 112");
         DragDropTargetId = 0;
+        printf("ImGui::CreateContext 113");
         DragDropAcceptFlags = ImGuiDragDropFlags_None;
+        printf("ImGui::CreateContext 114");
         DragDropAcceptIdCurrRectSurface = 0.0f;
+        printf("ImGui::CreateContext 115");
         DragDropAcceptIdPrev = DragDropAcceptIdCurr = 0;
+        printf("ImGui::CreateContext 116");
         DragDropAcceptFrameCount = -1;
+        printf("ImGui::CreateContext 117");
         DragDropHoldJustPressedId = 0;
+        printf("ImGui::CreateContext 118");
         memset(DragDropPayloadBufLocal, 0, sizeof(DragDropPayloadBufLocal));
+        printf("ImGui::CreateContext 119");
 
+        printf("ImGui::CreateContext 120");
         ClipperTempDataStacked = 0;
+        printf("ImGui::CreateContext 121");
 
+        printf("ImGui::CreateContext 122");
         CurrentTable = NULL;
+        printf("ImGui::CreateContext 123");
         TablesTempDataStacked = 0;
+        printf("ImGui::CreateContext 124");
         CurrentTabBar = NULL;
+        printf("ImGui::CreateContext 125");
 
+        printf("ImGui::CreateContext 126");
         HoverItemDelayId = HoverItemDelayIdPreviousFrame = HoverItemUnlockedStationaryId = HoverWindowUnlockedStationaryId = 0;
+        printf("ImGui::CreateContext 127");
         HoverItemDelayTimer = HoverItemDelayClearTimer = 0.0f;
+        printf("ImGui::CreateContext 128");
 
+        printf("ImGui::CreateContext 129");
         MouseCursor = ImGuiMouseCursor_Arrow;
+        printf("ImGui::CreateContext 130");
         MouseStationaryTimer = 0.0f;
+        printf("ImGui::CreateContext 131");
 
+        printf("ImGui::CreateContext 132");
         TempInputId = 0;
+        printf("ImGui::CreateContext 133");
         ColorEditOptions = ImGuiColorEditFlags_DefaultOptions_;
+        printf("ImGui::CreateContext 134");
         ColorEditCurrentID = ColorEditSavedID = 0;
+        printf("ImGui::CreateContext 135");
         ColorEditSavedHue = ColorEditSavedSat = 0.0f;
+        printf("ImGui::CreateContext 136");
         ColorEditSavedColor = 0;
+        printf("ImGui::CreateContext 137");
         WindowResizeRelativeMode = false;
+        printf("ImGui::CreateContext 138");
         SliderGrabClickOffset = 0.0f;
+        printf("ImGui::CreateContext 139");
         SliderCurrentAccum = 0.0f;
+        printf("ImGui::CreateContext 140");
         SliderCurrentAccumDirty = false;
+        printf("ImGui::CreateContext 141");
         DragCurrentAccumDirty = false;
+        printf("ImGui::CreateContext 142");
         DragCurrentAccum = 0.0f;
+        printf("ImGui::CreateContext 143");
         DragSpeedDefaultRatio = 1.0f / 100.0f;
+        printf("ImGui::CreateContext 144");
         ScrollbarClickDeltaToGrabCenter = 0.0f;
+        printf("ImGui::CreateContext 145");
         DisabledAlphaBackup = 0.0f;
+        printf("ImGui::CreateContext 146");
         DisabledStackSize = 0;
+        printf("ImGui::CreateContext 147");
         LockMarkEdited = 0;
+        printf("ImGui::CreateContext 148");
         TooltipOverrideCount = 0;
+        printf("ImGui::CreateContext 149");
 
+        printf("ImGui::CreateContext 150");
         PlatformImeData.InputPos = ImVec2(0.0f, 0.0f);
+        printf("ImGui::CreateContext 151");
         PlatformImeDataPrev.InputPos = ImVec2(-1.0f, -1.0f); // Different to ensure initial submission
+        printf("ImGui::CreateContext 152");
         PlatformImeViewport = 0;
+        printf("ImGui::CreateContext 153");
 
+        printf("ImGui::CreateContext 154");
         DockNodeWindowMenuHandler = NULL;
+        printf("ImGui::CreateContext 155");
 
+        printf("ImGui::CreateContext 156");
         SettingsLoaded = false;
+        printf("ImGui::CreateContext 157");
         SettingsDirtyTimer = 0.0f;
+        printf("ImGui::CreateContext 158");
         HookIdNext = 0;
+        printf("ImGui::CreateContext 159");
 
+        printf("ImGui::CreateContext 160");
         memset(LocalizationTable, 0, sizeof(LocalizationTable));
+        printf("ImGui::CreateContext 161");
 
+        printf("ImGui::CreateContext 162");
         LogEnabled = false;
+        printf("ImGui::CreateContext 163");
         LogType = ImGuiLogType_None;
+        printf("ImGui::CreateContext 164");
         LogNextPrefix = LogNextSuffix = NULL;
+        printf("ImGui::CreateContext 165");
         LogFile = NULL;
+        printf("ImGui::CreateContext 166");
         LogLinePosY = FLT_MAX;
+        printf("ImGui::CreateContext 167");
         LogLineFirstItem = false;
+        printf("ImGui::CreateContext 168");
         LogDepthRef = 0;
+        printf("ImGui::CreateContext 169");
         LogDepthToExpand = LogDepthToExpandDefault = 2;
+        printf("ImGui::CreateContext 170");
 
+        printf("ImGui::CreateContext 171");
         DebugLogFlags = ImGuiDebugLogFlags_OutputToTTY;
+        printf("ImGui::CreateContext 172");
         DebugLocateId = 0;
+        printf("ImGui::CreateContext 173");
         DebugLogAutoDisableFlags = ImGuiDebugLogFlags_None;
+        printf("ImGui::CreateContext 174");
         DebugLogAutoDisableFrames = 0;
+        printf("ImGui::CreateContext 175");
         DebugLocateFrames = 0;
+        printf("ImGui::CreateContext 176");
         DebugBeginReturnValueCullDepth = -1;
+        printf("ImGui::CreateContext 177");
         DebugItemPickerActive = false;
+        printf("ImGui::CreateContext 178");
         DebugItemPickerMouseButton = ImGuiMouseButton_Left;
+        printf("ImGui::CreateContext 179");
         DebugItemPickerBreakId = 0;
+        printf("ImGui::CreateContext 180");
         DebugFlashStyleColorTime = 0.0f;
+        printf("ImGui::CreateContext 181");
         DebugFlashStyleColorIdx = ImGuiCol_COUNT;
+        printf("ImGui::CreateContext 182");
         DebugHoveredDockNode = NULL;
+        printf("ImGui::CreateContext 183");
 
+        printf("ImGui::CreateContext 184");
         // Same as DebugBreakClearData(). Those fields are scattered in their respective subsystem to stay in hot-data locations
+        printf("ImGui::CreateContext 185");
         DebugBreakInWindow = 0;
+        printf("ImGui::CreateContext 186");
         DebugBreakInTable = 0;
+        printf("ImGui::CreateContext 187");
         DebugBreakInLocateId = false;
+        printf("ImGui::CreateContext 188");
         DebugBreakKeyChord = ImGuiKey_Pause;
+        printf("ImGui::CreateContext 189");
         DebugBreakInShortcutRouting = ImGuiKey_None;
+        printf("ImGui::CreateContext 190");
 
+        printf("ImGui::CreateContext 191");
         memset(FramerateSecPerFrame, 0, sizeof(FramerateSecPerFrame));
+        printf("ImGui::CreateContext 192");
         FramerateSecPerFrameIdx = FramerateSecPerFrameCount = 0;
+        printf("ImGui::CreateContext 193");
         FramerateSecPerFrameAccum = 0.0f;
+        printf("ImGui::CreateContext 194");
         WantCaptureMouseNextFrame = WantCaptureKeyboardNextFrame = WantTextInputNextFrame = -1;
+        printf("ImGui::CreateContext 195");
     }
 };
 

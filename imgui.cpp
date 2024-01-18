@@ -3746,13 +3746,8 @@ void ImGui::Shutdown()
         return;
 
     // Save settings (unless we haven't attempted to load them: CreateContext/DestroyContext without a call to NewFrame shouldn't save an empty file)
-#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
-    if (g.SettingsLoaded && g.IO.IniFilename != NULL)
-        SaveIniSettingsToDisk(g.IO.IniFilename);
-#else
     if (g.SettingsLoaded && !g.IO.IniFilename.empty())
         SaveIniSettingsToDisk(g.IO.IniFilename.c_str());
-#endif
 
     // Destroy platform windows
     DestroyPlatformWindows();
@@ -13921,11 +13916,7 @@ void ImGui::LogToFile(int auto_open_depth, const char* filename)
     // By opening the file in binary mode "ab" we have consistent output everywhere.
     if (!filename)
     {
-#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
-        filename = g.IO.LogFilename;
-#else
         filename = g.IO.LogFilename.c_str();
-#endif
     }
     if (!filename || !filename[0])
         return;
@@ -14048,13 +14039,8 @@ void ImGui::UpdateSettings()
     if (!g.SettingsLoaded)
     {
         IM_ASSERT(g.SettingsWindows.empty());
-#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
-        if (g.IO.IniFilename)
-            LoadIniSettingsFromDisk(g.IO.IniFilename);
-#else
         if (!g.IO.IniFilename.empty())
             LoadIniSettingsFromDisk(g.IO.IniFilename.c_str());
-#endif
         g.SettingsLoaded = true;
     }
 
@@ -14064,17 +14050,10 @@ void ImGui::UpdateSettings()
         g.SettingsDirtyTimer -= g.IO.DeltaTime;
         if (g.SettingsDirtyTimer <= 0.0f)
         {
-#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
-            if (g.IO.IniFilename != NULL)
-                SaveIniSettingsToDisk(g.IO.IniFilename);
-            else
-                g.IO.WantSaveIniSettings = true;  // Let user know they can call SaveIniSettingsToMemory(). user will need to clear io.WantSaveIniSettings themselves.
-#else
             if (!g.IO.IniFilename.empty())
                 SaveIniSettingsToDisk(g.IO.IniFilename.c_str());
             else
                 g.IO.WantSaveIniSettings = true;  // Let user know they can call SaveIniSettingsToMemory(). user will need to clear io.WantSaveIniSettings themselves.
-#endif
             g.SettingsDirtyTimer = 0.0f;
         }
     }
@@ -20116,15 +20095,6 @@ void ImGui::ShowMetricsWindow(bool* p_open)
         if (SmallButton("Save to memory"))
             SaveIniSettingsToMemory();
         SameLine();
-#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
-        if (SmallButton("Save to disk"))
-            SaveIniSettingsToDisk(g.IO.IniFilename);
-        SameLine();
-        if (g.IO.IniFilename)
-            Text("\"%s\"", g.IO.IniFilename);
-        else
-            TextUnformatted("<NULL>");
-#else
         if (SmallButton("Save to disk"))
             SaveIniSettingsToDisk(g.IO.IniFilename.c_str());
         SameLine();
@@ -20132,7 +20102,6 @@ void ImGui::ShowMetricsWindow(bool* p_open)
             Text("\"%s\"", g.IO.IniFilename.c_str());
         else
             TextUnformatted("<NULL>");
-#endif
         Checkbox("io.ConfigDebugIniSettings", &io.ConfigDebugIniSettings);
         Text("SettingsDirtyTimer %.2f", g.SettingsDirtyTimer);
         if (TreeNode("SettingsHandlers", "Settings handlers: (%d)", g.SettingsHandlers.Size))
