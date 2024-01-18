@@ -3620,7 +3620,11 @@ ImGuiContext* ImGui::CreateContext(ImFontAtlas* shared_font_atlas)
     printf("ImGui::CreateContext 1\n");
     ImGuiContext* prev_ctx = GetCurrentContext();
     printf("ImGui::CreateContext 2\n");
-    ImGuiContext* ctx = IM_NEW(ImGuiContext)(shared_font_atlas);
+    //ImGuiContext* ctx = IM_NEW(ImGuiContext)(shared_font_atlas);
+    //ImGuiContext* ctx = new(ImNewWrapper2(), ImGui::MemAlloc(sizeof(ImGuiContext))) ImGuiContext(shared_font_atlas);
+    printf("sizeof ImGuiContext = %lu\n", sizeof(ImGuiContext));
+    ImGuiContext* ctx = new ImGuiContext(shared_font_atlas);  //IM_NEW(ImGuiContext)(shared_font_atlas);
+
     printf("ImGui::CreateContext 3\n");
     SetCurrentContext(ctx);
     printf("ImGui::CreateContext 4\n");
@@ -3742,7 +3746,7 @@ void ImGui::Shutdown()
         return;
 
     // Save settings (unless we haven't attempted to load them: CreateContext/DestroyContext without a call to NewFrame shouldn't save an empty file)
-#ifndef IMGUI_BUNDLE_PYTHON_API
+#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
     if (g.SettingsLoaded && g.IO.IniFilename != NULL)
         SaveIniSettingsToDisk(g.IO.IniFilename);
 #else
@@ -13917,7 +13921,7 @@ void ImGui::LogToFile(int auto_open_depth, const char* filename)
     // By opening the file in binary mode "ab" we have consistent output everywhere.
     if (!filename)
     {
-#ifndef IMGUI_BUNDLE_PYTHON_API
+#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
         filename = g.IO.LogFilename;
 #else
         filename = g.IO.LogFilename.c_str();
@@ -14044,7 +14048,7 @@ void ImGui::UpdateSettings()
     if (!g.SettingsLoaded)
     {
         IM_ASSERT(g.SettingsWindows.empty());
-#ifndef IMGUI_BUNDLE_PYTHON_API
+#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
         if (g.IO.IniFilename)
             LoadIniSettingsFromDisk(g.IO.IniFilename);
 #else
@@ -14060,7 +14064,7 @@ void ImGui::UpdateSettings()
         g.SettingsDirtyTimer -= g.IO.DeltaTime;
         if (g.SettingsDirtyTimer <= 0.0f)
         {
-#ifndef IMGUI_BUNDLE_PYTHON_API
+#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
             if (g.IO.IniFilename != NULL)
                 SaveIniSettingsToDisk(g.IO.IniFilename);
             else
@@ -20112,7 +20116,7 @@ void ImGui::ShowMetricsWindow(bool* p_open)
         if (SmallButton("Save to memory"))
             SaveIniSettingsToMemory();
         SameLine();
-#ifndef IMGUI_BUNDLE_PYTHON_API
+#ifndef IMGUI_BUNDLE_PYTHON_API_NONONO
         if (SmallButton("Save to disk"))
             SaveIniSettingsToDisk(g.IO.IniFilename);
         SameLine();
