@@ -3617,12 +3617,18 @@ void ImGui::GetAllocatorFunctions(ImGuiMemAllocFunc* p_alloc_func, ImGuiMemFreeF
 
 ImGuiContext* ImGui::CreateContext(ImFontAtlas* shared_font_atlas)
 {
+    printf("ImGui::CreateContext 1\n");
     ImGuiContext* prev_ctx = GetCurrentContext();
+    printf("ImGui::CreateContext 2\n");
     ImGuiContext* ctx = IM_NEW(ImGuiContext)(shared_font_atlas);
+    printf("ImGui::CreateContext 3\n");
     SetCurrentContext(ctx);
+    printf("ImGui::CreateContext 4\n");
     Initialize();
+    printf("ImGui::CreateContext 5\n");
     if (prev_ctx != NULL)
         SetCurrentContext(prev_ctx); // Restore previous context if any, else keep new one.
+    printf("ImGui::CreateContext 6\n");
     return ctx;
 }
 
@@ -3655,8 +3661,11 @@ static const ImGuiLocEntry GLocalizationEntriesEnUS[] =
 
 void ImGui::Initialize()
 {
+    printf("ImGui::Initialize 1\n");
     ImGuiContext& g = *GImGui;
+    printf("ImGui::Initialize 2\n");
     IM_ASSERT(!g.Initialized && !g.SettingsLoaded);
+    printf("ImGui::Initialize 3\n");
 
     // Add .ini handle for ImGuiWindow and ImGuiTable types
     {
@@ -3668,36 +3677,48 @@ void ImGui::Initialize()
         ini_handler.ReadLineFn = WindowSettingsHandler_ReadLine;
         ini_handler.ApplyAllFn = WindowSettingsHandler_ApplyAll;
         ini_handler.WriteAllFn = WindowSettingsHandler_WriteAll;
+        printf("ImGui::Initialize 4\n");
         AddSettingsHandler(&ini_handler);
+        printf("ImGui::Initialize 5\n");
     }
     TableSettingsAddSettingsHandler();
+    printf("ImGui::Initialize 6\n");
 
     // Setup default localization table
     LocalizeRegisterEntries(GLocalizationEntriesEnUS, IM_ARRAYSIZE(GLocalizationEntriesEnUS));
+    printf("ImGui::Initialize 7\n");
 
     // Setup default platform clipboard/IME handlers.
     g.IO.GetClipboardTextFn = GetClipboardTextFn_DefaultImpl;    // Platform dependent default implementations
     g.IO.SetClipboardTextFn = SetClipboardTextFn_DefaultImpl;
     g.IO.ClipboardUserData = (void*)&g;                          // Default implementation use the ImGuiContext as user data (ideally those would be arguments to the function)
     g.IO.SetPlatformImeDataFn = SetPlatformImeDataFn_DefaultImpl;
+    printf("ImGui::Initialize 8\n");
 
     // Create default viewport
     ImGuiViewportP* viewport = IM_NEW(ImGuiViewportP)();
+    printf("ImGui::Initialize 9\n");
     viewport->ID = IMGUI_VIEWPORT_DEFAULT_ID;
     viewport->Idx = 0;
     viewport->PlatformWindowCreated = true;
     viewport->Flags = ImGuiViewportFlags_OwnedByApp;
+    printf("ImGui::Initialize 10\n");
     g.Viewports.push_back(viewport);
+    printf("ImGui::Initialize 11\n");
     g.TempBuffer.resize(1024 * 3 + 1, 0);
+    printf("ImGui::Initialize 12\n");
     g.ViewportCreatedCount++;
     g.PlatformIO.Viewports.push_back(g.Viewports[0]);
+    printf("ImGui::Initialize 13\n");
 
 #ifdef IMGUI_HAS_DOCK
     // Initialize Docking
     DockContextInitialize(&g);
+    printf("ImGui::Initialize 14\n");
 #endif
 
     g.Initialized = true;
+    printf("ImGui::Initialize 15\n");
 }
 
 // This function is merely here to free heap allocations.
