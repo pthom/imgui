@@ -47,7 +47,12 @@
 // IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API is always defined (even when building python bindings),
 // but is used as a marker to exclude certain functions from the python binding code.
 #define IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
+
+#ifdef IMGUI_BUNDLE_PYTHON_API
+//#define IMGUI_BUNDLE_IMGUI_USE_STRING
+#endif
 // [/ADAPT_IMGUI_BUNDLE]
+
 
 
 
@@ -2394,7 +2399,7 @@ struct ImGuiIO
     ImVec2      DisplaySize;                    // <unset>          // Main display size, in pixels (generally == GetMainViewport()->Size). May change every frame.
     float       DeltaTime;                      // = 1.0f/60.0f     // Time elapsed since last frame, in seconds. May change every frame.
     float       IniSavingRate;                  // = 5.0f           // Minimum time between saving positions/sizes to .ini file, in seconds.
-#ifdef IMGUI_BUNDLE_PYTHON_API
+#ifdef IMGUI_BUNDLE_IMGUI_USE_STRING
     std::string LogFilename;                    // = "imgui_log.txt"// Path to .log file (default parameter to ImGui::LogToFile when no file is specified).
     std::string IniFilename;                    // = "imgui.ini"    // Path to .ini file (important: default "imgui.ini" is relative to current working dir!). Set NULL to disable automatic .ini loading/saving or if you want to manually call LoadIniSettingsXXX() / SaveIniSettingsXXX() functions.
 #else
