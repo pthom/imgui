@@ -2063,6 +2063,15 @@ void ImGuiIO::SetLogFilename(const char* filename)
     strncpy(sLogFilename, filename, 1024);
     LogFilename = sLogFilename;
 }
+std::string ImGuiIO::GetIniFilename()
+{
+    return IniFilename;
+}
+std::string ImGuiIO::GetLogFilename()
+{
+    return LogFilename;
+}
+
 #endif
 
 
