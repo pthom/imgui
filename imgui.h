@@ -2612,6 +2612,8 @@ struct ImGuiIO
     #ifdef IMGUI_BUNDLE_PYTHON_API
     IMGUI_API void SetIniFilename(const char* filename);
     IMGUI_API void SetLogFilename(const char* filename);
+    IMGUI_API std::string GetIniFilename();
+    IMGUI_API std::string GetLogFilename();
     #endif
     // [/ADAPT_IMGUI_BUNDLE]
 };
