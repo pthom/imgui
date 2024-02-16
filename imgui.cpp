@@ -19483,6 +19483,17 @@ ImGuiID ImGui::DockBuilderSplitNode(ImGuiID id, ImGuiDir split_dir, float size_r
     return id_at_dir;
 }
 
+#ifdef IMGUI_BUNDLE_PYTHON_API
+ImGui::DockBuilderSplitNodeResult ImGui::DockBuilderSplitNode(ImGuiID node_id, ImGuiDir split_dir, float size_ratio_for_node_at_dir)
+{
+    ImGui::DockBuilderSplitNodeResult r;
+    DockBuilderSplitNode(node_id, split_dir, size_ratio_for_node_at_dir, &r.id_at_dir, &r.id_at_opposite_dir);
+    return r;
+}
+#endif
+
+
+
 static ImGuiDockNode* DockBuilderCopyNodeRec(ImGuiDockNode* src_node, ImGuiID dst_node_id_if_known, ImVector<ImGuiID>* out_node_remap_pairs)
 {
     ImGuiContext& g = *GImGui;
