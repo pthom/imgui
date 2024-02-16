@@ -8594,6 +8594,14 @@ bool    ImGui::BeginTabItem(const char* label, bool* p_open, ImGuiTabItemFlags f
     return ret;
 }
 
+#ifdef IMGUI_BUNDLE_PYTHON_API
+bool ImGui::BeginTabItemSimple(const char* label, ImGuiTabItemFlags flags)
+{
+    return BeginTabItem(label, NULL, flags);
+}
+#endif
+
+
 void    ImGui::EndTabItem()
 {
     ImGuiContext& g = *GImGui;
