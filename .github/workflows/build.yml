@@ -23,6 +23,11 @@ jobs:
       MSBUILD_PATH: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\
     steps:
       - uses: actions/checkout@v4
+      - name: Append imgui_stacklayout.cpp to imgui.cpp (Windows)
+        shell: cmd
+        run: |
+          type imgui_stacklayout.cpp >> imgui.cpp
+          del imgui_stacklayout.cpp
 
       - name: Install Dependencies
         shell: powershell
@@ -270,6 +275,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Append imgui_stacklayout.cpp to imgui.cpp
+      run: cat imgui_stacklayout.cpp >> imgui.cpp && rm imgui_stacklayout.cpp
 
     - name: Install Dependencies
       run: |
@@ -487,6 +494,8 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Append imgui_stacklayout.cpp to imgui.cpp
+      run: cat imgui_stacklayout.cpp >> imgui.cpp && rm imgui_stacklayout.cpp
 
     - name: Install Dependencies
       run: |
@@ -561,6 +570,8 @@ jobs:
     runs-on: macos-14
     steps:
     - uses: actions/checkout@v4
+    - name: Append imgui_stacklayout.cpp to imgui.cpp
+      run: cat imgui_stacklayout.cpp >> imgui.cpp && rm imgui_stacklayout.cpp
 
     - name: Build example_apple_metal
       run: |
@@ -571,6 +582,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Append imgui_stacklayout.cpp to imgui.cpp
+      run: cat imgui_stacklayout.cpp >> imgui.cpp && rm imgui_stacklayout.cpp
 
     - name: Install Dependencies
       run: |
@@ -612,6 +625,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Append imgui_stacklayout.cpp to imgui.cpp
+      run: cat imgui_stacklayout.cpp >> imgui.cpp && rm imgui_stacklayout.cpp
 
     - name: Build example_android_opengl3
       run: |
