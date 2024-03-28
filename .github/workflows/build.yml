@@ -32,6 +32,10 @@ jobs:
         with:
           path: ${{ github.workspace }}/imgui
 
+      - name: Append imgui_stacklayout.cpp to imgui.cpp (Windows)
+        shell: cmd
+          type imgui_stacklayout.cpp >> imgui.cpp
+
       # The VulkanSDK libs for Windows is manually generated using build_windows_vulkan_libs.ps1 + attached to issue #8925.
       # (we have a .yml workflow in commit history if it becomes ever useful to create this on CI too)
       - name: Install Dependencies
@@ -280,6 +284,8 @@ jobs:
     - uses: actions/checkout@v6
       with:
         path: ${{ github.workspace }}/imgui
+    - name: Append imgui_stacklayout.cpp to imgui.cpp
+      run: cat imgui_stacklayout.cpp >> imgui.cpp && rm imgui_stacklayout.cpp
 
     - name: Install Dependencies
       run: |
@@ -518,8 +524,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-      with:
-        path: ${{ github.workspace }}/imgui
 
     - name: Install Dependencies
       run: |
@@ -607,6 +611,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+    - name: Append imgui_stacklayout.cpp to imgui.cpp
+      run: cat imgui_stacklayout.cpp >> imgui.cpp && rm imgui_stacklayout.cpp
 
     - name: Build example_apple_metal
       run: |
@@ -619,6 +625,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+    - name: Append imgui_stacklayout.cpp to imgui.cpp
+      run: cat imgui_stacklayout.cpp >> imgui.cpp && rm imgui_stacklayout.cpp
 
     - name: Install Dependencies
       run: |
@@ -667,6 +675,8 @@ jobs:
         gradle-version: '9.4.1'
 
     - uses: actions/checkout@v6
+    - name: Append imgui_stacklayout.cpp to imgui.cpp
+      run: cat imgui_stacklayout.cpp >> imgui.cpp && rm imgui_stacklayout.cpp
     - name: Build example_android_opengl3
       run: |
         cd examples/example_android_opengl3/android
