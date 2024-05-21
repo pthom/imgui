@@ -996,6 +996,10 @@ void  ImDrawList::AddConvexPolyFilled(const std::vector<ImVec2>& points, ImU32 c
 {
     AddConvexPolyFilled(points.data(), (int)points.size(), col);
 }
+void  ImDrawList::AddConcavePolyFilled(const std::vector<ImVec2>& points, ImU32 col)
+{
+    AddConcavePolyFilled(points.data(), (int)points.size(), col);
+}
 #endif
 
 // - We intentionally avoid using ImVec2 and its math operators here to reduce cost to a minimum for debug/non-inlined builds.
