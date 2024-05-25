@@ -5658,6 +5658,18 @@ static void RenderArrowsForVerticalBar(ImDrawList* draw_list, ImVec2 pos, ImVec2
     ImGui::RenderArrowPointingAt(draw_list, ImVec2(pos.x + bar_w - half_sz.x,     pos.y), half_sz,                              ImGuiDir_Left,  IM_COL32(255,255,255,alpha8));
 }
 
+#ifdef IMGUI_BUNDLE_PYTHON_API
+std::tuple<bool, ImVec4> ImGui::ColorPicker4(const std::string& label, ImVec4 col, ImGuiColorEditFlags flags, std::optional<ImVec4> ref_col)
+{
+    float col_values[4] = { col.x, col.y, col.z, col.w };
+    if (!ImGui::ColorPicker4(label.c_str(), col_values, flags, ref_col ? &ref_col.value().x : nullptr))
+        return {false, col};
+
+    return {true, ImVec4(col_values[0], col_values[1], col_values[2], col_values[3])};
+}
+#endif
+
+
 // Note: ColorPicker4() only accesses 3 floats if ImGuiColorEditFlags_NoAlpha flag is set.
 // (In C++ the 'float col[4]' notation for a function argument is equivalent to 'float* col', we only specify a size to facilitate understanding of the code.)
 // FIXME: we adjust the big color square height based on item width, which may cause a flickering feedback loop (if automatic height makes a vertical scrollbar appears, affecting automatic width..)
