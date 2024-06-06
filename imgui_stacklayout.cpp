@@ -62,6 +62,9 @@ Index of this file:
 #include <stdint.h>     // intptr_t
 #endif
 
+#include <vector>
+#include <algorithm>
+
 //-----------------------------------------------------------------------------
 // [SECTION] Stack layout: Forward declarations
 //-----------------------------------------------------------------------------
@@ -1050,9 +1053,31 @@ void ImGuiInternal::UpdateItemRect(ImGuiID window_id, const ImVec2& min, const I
 //-----------------------------------------------------------------------------
 // [SECTION] Stack Layout: Public API
 //-----------------------------------------------------------------------------
+void CheckLayoutUniqueName(const char* str_id)
+{
+    static std::vector<ImGuiID> gLayoutIdsThisFrame;
+    static int gLastFrameIdx = -1;
+
+    int currentFrameIdx = ImGui::GetFrameCount();
+    if (gLastFrameIdx != currentFrameIdx)
+    {
+        gLayoutIdsThisFrame.clear();
+        gLastFrameIdx = currentFrameIdx;
+    }
+
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    ImGuiID newId = window->GetID(str_id);
+
+    bool layoutNameAlreadyExists = std::find(gLayoutIdsThisFrame.begin(), gLayoutIdsThisFrame.end(), newId) != gLayoutIdsThisFrame.end();
+    IM_ASSERT(!layoutNameAlreadyExists && "When calling ImGui::BeginHorizontal or ImGui::BeginVertical the layout name must be unique, or you shall call ImGui::PushID before");
+    (void)layoutNameAlreadyExists;  // Avoid unused variable warning, when asserts are disabled
+
+    gLayoutIdsThisFrame.push_back(newId);
+}
 
 void ImGui::BeginHorizontal(const char* str_id, const ImVec2& size/* = ImVec2(0, 0)*/, float align/* = -1*/)
 {
+    CheckLayoutUniqueName(str_id);
     ImGuiWindow* window = GetCurrentWindow();
     BeginLayout(window->GetID(str_id), ImGuiLayoutType_Horizontal, size, align);
 }
@@ -1076,6 +1101,7 @@ void ImGui::EndHorizontal()
 
 void ImGui::BeginVertical(const char* str_id, const ImVec2& size/* = ImVec2(0, 0)*/, float align/* = -1*/)
 {
+    CheckLayoutUniqueName(str_id);
     ImGuiWindow* window = GetCurrentWindow();
     BeginLayout(window->GetID(str_id), ImGuiLayoutType_Vertical, size, align);
 }
