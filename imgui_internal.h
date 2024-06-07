@@ -2905,6 +2905,10 @@ public:
     ImGuiID     GetID(const char* str, const char* str_end = NULL);
     ImGuiID     GetID(const void* ptr);
     ImGuiID     GetID(int n);
+
+    // Addition to ImGui Bundle: a version of GetID that warns if the ID was already used
+    IMGUI_API ImGuiID       GetID_AssertUnique(const char* str_id);  // (Specific to ImGui Bundle) Calculate unique ID (hash of whole ID stack + given parameter). Will warn if the ID was already used, and advise to call ImGui::PushID() before
+
     ImGuiID     GetIDFromRectangle(const ImRect& r_abs);
 
     // We don't use g.FontSize because the window may be != g.CurrentWindow.

@@ -1247,6 +1247,14 @@ static ImGuiMemAllocFunc    GImAllocatorAllocFunc = MallocWrapper;
 static ImGuiMemFreeFunc     GImAllocatorFreeFunc = FreeWrapper;
 static void*                GImAllocatorUserData = NULL;
 
+// Optional benchmark for GetID_AssertUnique
+//  (See https://github.com/ocornut/imgui/issues/7669)
+// #define BENCHMARK_GETID  // uncomment to use this benchmark
+#ifdef BENCHMARK_GETID
+#include "bench.hpp"
+BenchmarkSession gBenchmark;
+#endif
+
 //-----------------------------------------------------------------------------
 // [SECTION] USER FACING STRUCTURES (ImGuiStyle, ImGuiIO)
 //-----------------------------------------------------------------------------
@@ -3770,6 +3778,10 @@ void ImGui::DestroyContext(ImGuiContext* ctx)
     Shutdown();
     SetCurrentContext((prev_ctx != ctx) ? prev_ctx : NULL);
     IM_DELETE(ctx);
+
+#ifdef BENCHMARK_GETID
+    printf("%s", gBenchmark.Report().c_str());
+#endif
 }
 
 // IMPORTANT: ###xxx suffixes must be same in ALL languages
@@ -8886,39 +8898,114 @@ bool ImGui::IsRectVisible(const ImVec2& rect_min, const ImVec2& rect_max)
 // it should ideally be flattened at some point but it's been used a lots by widgets.
 ImGuiID ImGuiWindow::GetID(const char* str, const char* str_end)
 {
-    ImGuiID seed = IDStack.back();
-    ImGuiID id = ImHashStr(str, str_end ? (str_end - str) : 0, seed);
-#ifndef IMGUI_DISABLE_DEBUG_TOOLS
-    ImGuiContext& g = *Ctx;
-    if (g.DebugHookIdInfo == id)
-        ImGui::DebugHookIdInfo(id, ImGuiDataType_String, str, str_end);
+    ImGuiID id;
+#ifdef BENCHMARK_GETID
+    BENCHMARK_VOID_EXPRESSION(gBenchmark, "GetId(const char*)",
+    {
+#endif
+        ImGuiID seed = IDStack.back();
+        id = ImHashStr(str, str_end ? (str_end - str) : 0, seed);
+    #ifndef IMGUI_DISABLE_DEBUG_TOOLS
+        ImGuiContext &g = *Ctx;
+        if (g.DebugHookIdInfo == id)
+            ImGui::DebugHookIdInfo(id, ImGuiDataType_String, str, str_end);
+    #endif
+
+#ifdef BENCHMARK_GETID
+        });
 #endif
     return id;
 }
 
 ImGuiID ImGuiWindow::GetID(const void* ptr)
 {
-    ImGuiID seed = IDStack.back();
-    ImGuiID id = ImHashData(&ptr, sizeof(void*), seed);
-#ifndef IMGUI_DISABLE_DEBUG_TOOLS
-    ImGuiContext& g = *Ctx;
-    if (g.DebugHookIdInfo == id)
-        ImGui::DebugHookIdInfo(id, ImGuiDataType_Pointer, ptr, NULL);
+    ImGuiID id;
+#ifdef BENCHMARK_GETID
+    BENCHMARK_VOID_EXPRESSION(gBenchmark, "GetId(void*)",
+    {
+#endif
+        ImGuiID seed = IDStack.back();
+        id = ImHashData(&ptr, sizeof(void*), seed);
+    #ifndef IMGUI_DISABLE_DEBUG_TOOLS
+        ImGuiContext& g = *Ctx;
+        if (g.DebugHookIdInfo == id)
+            ImGui::DebugHookIdInfo(id, ImGuiDataType_Pointer, ptr, NULL);
+    #endif
+#ifdef BENCHMARK_GETID
+        });
 #endif
     return id;
 }
 
 ImGuiID ImGuiWindow::GetID(int n)
 {
-    ImGuiID seed = IDStack.back();
-    ImGuiID id = ImHashData(&n, sizeof(n), seed);
-#ifndef IMGUI_DISABLE_DEBUG_TOOLS
-    ImGuiContext& g = *Ctx;
-    if (g.DebugHookIdInfo == id)
-        ImGui::DebugHookIdInfo(id, ImGuiDataType_S32, (void*)(intptr_t)n, NULL);
+    ImGuiID id;
+#ifdef BENCHMARK_GETID
+    BENCHMARK_VOID_EXPRESSION(gBenchmark, "GetId(int)",
+    {
+#endif
+        ImGuiID seed = IDStack.back();
+        id = ImHashData(&n, sizeof(n), seed);
+    #ifndef IMGUI_DISABLE_DEBUG_TOOLS
+        ImGuiContext& g = *Ctx;
+        if (g.DebugHookIdInfo == id)
+            ImGui::DebugHookIdInfo(id, ImGuiDataType_S32, (void*)(intptr_t)n, NULL);
+    #endif
+#ifdef BENCHMARK_GETID
+        });
 #endif
     return id;
 }
+
+// Addition to ImGui Bundle: a version of GetID that warns if the ID was already used
+IMGUI_API ImGuiID ImGuiWindow::GetID_AssertUnique(const char* str_id)
+{
+    // We do not need to benchmark this part
+    // (as it is already benchmarked inside ImGuiWindow::GetID(const char*))
+    ImGuiID id = GetID(str_id);
+
+#ifdef BENCHMARK_GETID
+    // Only benchmark the part that checks for reused id
+    BENCHMARK_VOID_EXPRESSION(gBenchmark, "GetID_AssertUniquePart",
+    {
+#endif
+        // sIdsThisFrame: a cache of the previously encountered ID
+        //                allocated once for all, max size = 100
+        constexpr int sMaxCacheSize = 100;
+        static ImVector<ImGuiID> sIdsThisFrame;
+
+        // Allocate memory once at startup
+        if (sIdsThisFrame.capacity() < sMaxCacheSize)
+            sIdsThisFrame.reserve(sMaxCacheSize);
+
+        static int sLastFrame = -1;
+        int currentFrame = ImGui::GetFrameCount();
+
+        if (currentFrame != sLastFrame)
+        {
+            // This log was used to log the number of items in sIdsThisFrame
+            // => maximum reached inside ShowDemoWindow/Widgets/Basic
+            //    with 52 items
+            //printf("Clearing %i items\n", sIdsThisFrame.size());
+
+            // We do not call sIdsThisFrame.clear():  we want to avoid any memory allocation during runtime
+            // instead we reset the size, and keep the allocated capacity. This way, our cache remains hot in the memory.
+            sIdsThisFrame.Size = 0;
+        }
+
+        if (sIdsThisFrame.contains(id))
+            IM_ASSERT(false && "Either your widgets names/ids must be distinct, or you shall call ImGui::PushID before reusing an id");
+
+        if (sIdsThisFrame.size() < sMaxCacheSize - 1)
+            sIdsThisFrame.push_back(id);
+        sLastFrame = currentFrame;
+#ifdef BENCHMARK_GETID
+        });
+#endif
+    return id;
+}
+
+
 
 // This is only used in rare/specific situations to manufacture an ID out of nowhere.
 ImGuiID ImGuiWindow::GetIDFromRectangle(const ImRect& r_abs)
