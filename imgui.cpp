@@ -8894,6 +8894,17 @@ ImGuiID ImGuiWindow::GetID(int n)
     return id;
 }
 
+int gDisable_GetID_AssertUnique = 0;
+ImGuiWindow::GetID_AssertUnique_DisableInScope::GetID_AssertUnique_DisableInScope::GetID_AssertUnique_DisableInScope()
+{
+    gDisable_GetID_AssertUnique += 1;
+}
+ImGuiWindow::GetID_AssertUnique_DisableInScope::GetID_AssertUnique_DisableInScope::~GetID_AssertUnique_DisableInScope()
+{
+    gDisable_GetID_AssertUnique -= 1;
+}
+static bool Disable_GetID_AssertUnique() { return gDisable_GetID_AssertUnique > 0; }
+
 // Addition to ImGui Bundle: a version of GetID that warns if the ID was already used
 IMGUI_API ImGuiID ImGuiWindow::GetID_AssertUnique(const char* str_id)
 {
@@ -8930,7 +8941,7 @@ IMGUI_API ImGuiID ImGuiWindow::GetID_AssertUnique(const char* str_id)
             sIdsThisFrame.Size = 0;
         }
 
-        if (sIdsThisFrame.contains(id))
+        if (sIdsThisFrame.contains(id)  && !Disable_GetID_AssertUnique())
             IM_ASSERT(false && "Either your widgets names/ids must be distinct, or you shall call ImGui::PushID before reusing an id");
 
         if (sIdsThisFrame.size() < sMaxCacheSize - 1)
