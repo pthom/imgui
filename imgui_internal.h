@@ -2908,6 +2908,11 @@ public:
 
     // Addition to ImGui Bundle: a version of GetID that warns if the ID was already used
     IMGUI_API ImGuiID       GetID_AssertUnique(const char* str_id);  // (Specific to ImGui Bundle) Calculate unique ID (hash of whole ID stack + given parameter). Will warn if the ID was already used, and advise to call ImGui::PushID() before
+    // Instantiate GetID_AssertUnique_DisableInScope in a function or scope to temporarily disable the check
+    struct GetID_AssertUnique_DisableInScope{
+        GetID_AssertUnique_DisableInScope();
+        ~GetID_AssertUnique_DisableInScope();
+    };
 
     ImGuiID     GetIDFromRectangle(const ImRect& r_abs);
 

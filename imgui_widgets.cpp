@@ -3459,6 +3459,9 @@ int ImParseFormatPrecision(const char* fmt, int default_precision)
 // FIXME: Facilitate using this in variety of other situations.
 bool ImGui::TempInputText(const ImRect& bb, ImGuiID id, const char* label, char* buf, int buf_size, ImGuiInputTextFlags flags)
 {
+    // Since this method reuses an existing ID, we allow it in its scope
+    ImGuiWindow::GetID_AssertUnique_DisableInScope disableAssertUnique;
+
     // On the first frame, g.TempInputTextId == 0, then on subsequent frames it becomes == id.
     // We clear ActiveID on the first frame to allow the InputText() taking it back.
     ImGuiContext& g = *GImGui;
@@ -3482,6 +3485,9 @@ bool ImGui::TempInputText(const ImRect& bb, ImGuiID id, const char* label, char*
 // However this may not be ideal for all uses, as some user code may break on out of bound values.
 bool ImGui::TempInputScalar(const ImRect& bb, ImGuiID id, const char* label, ImGuiDataType data_type, void* p_data, const char* format, const void* p_clamp_min, const void* p_clamp_max)
 {
+    // Since this method reuses an existing ID, we allow it in its scope
+    ImGuiWindow::GetID_AssertUnique_DisableInScope disableAssertUnique;
+
     // FIXME: May need to clarify display behavior if format doesn't contain %.
     // "%d" -> "%d" / "There are %d items" -> "%d" / "items" -> "%d" (fallback). Also see #6405
     const ImGuiDataTypeInfo* type_info = DataTypeGetInfo(data_type);
@@ -3517,6 +3523,7 @@ bool ImGui::TempInputScalar(const ImRect& bb, ImGuiID id, const char* label, ImG
         if (value_changed)
             MarkItemEdited(id);
     }
+
     return value_changed;
 }
 
