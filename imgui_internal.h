@@ -3379,7 +3379,16 @@ namespace ImGui
     // - ImGui::NewFrame() has never been called, which is illegal.
     // - You are calling ImGui functions after ImGui::EndFrame()/ImGui::Render() and before the next ImGui::NewFrame(), which is also illegal.
     inline    ImGuiWindow*  GetCurrentWindowRead()      { ImGuiContext& g = *GImGui; return g.CurrentWindow; }
-    inline    ImGuiWindow*  GetCurrentWindow()          { ImGuiContext& g = *GImGui; g.CurrentWindow->WriteAccessed = true; return g.CurrentWindow; }
+    inline    ImGuiWindow*  GetCurrentWindow()
+    {
+        ImGuiContext& g = *GImGui;
+        #ifdef IMGUI_BUNDLE_PYTHON_API
+        // Help python users, because otherwise, this leads to an un-debuggable segfault
+        IM_ASSERT(g.CurrentWindow != NULL && "ImGui::GetCurrentWindow() -> CurrentWindow is NULL. This is likely because you are calling ImGui functions after ImGui::EndFrame()/ImGui::Render() and before the next ImGui::NewFrame().");
+        #endif
+        g.CurrentWindow->WriteAccessed = true;
+        return g.CurrentWindow;
+    }
     IMGUI_API ImGuiWindow*  FindWindowByID(ImGuiID id);
     IMGUI_API ImGuiWindow*  FindWindowByName(const char* name);
     IMGUI_API void          UpdateWindowParentAndRootLinks(ImGuiWindow* window, ImGuiWindowFlags flags, ImGuiWindow* parent_window);
