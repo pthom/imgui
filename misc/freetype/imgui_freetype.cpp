@@ -45,13 +45,17 @@
 #include FT_GLYPH_H             // <freetype/ftglyph.h>
 #include FT_SYNTHESIS_H         // <freetype/ftsynth.h>
 
-#ifdef IMGUI_ENABLE_FREETYPE_LUNASVG
+#ifdef  IMGUI_ENABLE_FREETYPE_LUNASVG
 #include FT_OTSVG_H             // <freetype/otsvg.h>
 #include FT_BBOX_H              // <freetype/ftbbox.h>
 #include <lunasvg.h>
 #if !((FREETYPE_MAJOR >= 2) && (FREETYPE_MINOR >= 12))
 #error IMGUI_ENABLE_FREETYPE_LUNASVG requires FreeType version >= 2.12
 #endif
+#endif
+
+#ifdef  IMGUI_ENABLE_FREETYPE_PLUTOSVG
+#include <plutosvg.h>
 #endif
 
 #ifdef _MSC_VER
@@ -271,6 +275,9 @@ namespace
         FT_GlyphSlot slot = Face->glyph;
 #ifdef IMGUI_ENABLE_FREETYPE_LUNASVG
         IM_ASSERT(slot->format == FT_GLYPH_FORMAT_OUTLINE || slot->format == FT_GLYPH_FORMAT_BITMAP || slot->format == FT_GLYPH_FORMAT_SVG);
+#elif defined(IMGUI_ENABLE_FREETYPE_PLUTOSVG)
+// ???
+    IM_ASSERT(slot->format == FT_GLYPH_FORMAT_OUTLINE || slot->format == FT_GLYPH_FORMAT_BITMAP || slot->format == FT_GLYPH_FORMAT_SVG);
 #else
 #if ((FREETYPE_MAJOR >= 2) && (FREETYPE_MINOR >= 12))
         IM_ASSERT(slot->format != FT_GLYPH_FORMAT_SVG && "The font contains SVG glyphs, you'll need to enable IMGUI_ENABLE_FREETYPE_LUNASVG in imconfig.h and install required libraries in order to use this font");
@@ -582,6 +589,7 @@ bool ImFontAtlasBuildWithFreeTypeEx(FT_Library ft_library, ImFontAtlas* atlas, u
         const int padding = atlas->TexGlyphPadding;
         for (int glyph_i = 0; glyph_i < src_tmp.GlyphsList.Size; glyph_i++)
         {
+            printf("glyph_i: %d / %i\n", glyph_i, src_tmp.GlyphsList.Size);
             ImFontBuildSrcGlyphFT& src_glyph = src_tmp.GlyphsList[glyph_i];
 
             const FT_Glyph_Metrics* metrics = src_tmp.Font.LoadGlyph(src_glyph.Codepoint);
@@ -810,6 +818,9 @@ static bool ImFontAtlasBuildWithFreeType(ImFontAtlas* atlas)
     SVG_RendererHooks hooks = { ImGuiLunasvgPortInit, ImGuiLunasvgPortFree, ImGuiLunasvgPortRender, ImGuiLunasvgPortPresetSlot };
     FT_Property_Set(ft_library, "ot-svg", "svg-hooks", &hooks);
 #endif // IMGUI_ENABLE_FREETYPE_LUNASVG
+#ifdef IMGUI_ENABLE_FREETYPE_PLUTOSVG
+    FT_Property_Set(ft_library, "ot-svg", "svg-hooks", plutosvg_ft_svg_hooks());
+#endif
 
     bool ret = ImFontAtlasBuildWithFreeTypeEx(ft_library, atlas, atlas->FontBuilderFlags);
     FT_Done_Library(ft_library);
