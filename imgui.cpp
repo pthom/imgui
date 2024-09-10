@@ -4611,11 +4611,11 @@ const char* ImGui::GetClipboardText()
     ImGuiContext& g = *GImGui;
 #ifdef IMGUI_BUNDLE_PYTHON_API
     static std::string clipboard_content;
-    if (g.IO.GetClipboardTextFn_)
+    if (g.PlatformIO.Platform_GetClipboardTextFn)
     {
-        clipboard_content = g.IO.GetClipboardTextFn_();
-        return clipboard_content.c_str();
+        clipboard_content = g.PlatformIO.Platform_GetClipboardTextFn(&g);
     }
+    return clipboard_content.c_str();
 #endif
     return g.PlatformIO.Platform_GetClipboardTextFn ? g.PlatformIO.Platform_GetClipboardTextFn(&g) : "";
 }
@@ -4623,13 +4623,6 @@ const char* ImGui::GetClipboardText()
 void ImGui::SetClipboardText(const char* text)
 {
     ImGuiContext& g = *GImGui;
-#ifdef IMGUI_BUNDLE_PYTHON_API
-    if (g.IO.SetClipboardTextFn_)
-    {
-        g.IO.SetClipboardTextFn_(std::string(text));
-        return;
-    }
-#endif
     if (g.PlatformIO.Platform_SetClipboardTextFn != NULL)
         g.PlatformIO.Platform_SetClipboardTextFn(&g, text);
 }
