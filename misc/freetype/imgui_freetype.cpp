@@ -46,11 +46,18 @@
 #include FT_SYNTHESIS_H         // <freetype/ftsynth.h>
 
 #ifdef IMGUI_ENABLE_FREETYPE_LUNASVG
+#include FT_FREETYPE_H
+#include FT_MODULE_H
 #include FT_OTSVG_H             // <freetype/otsvg.h>
-#include FT_BBOX_H              // <freetype/ftbbox.h>
 #include <lunasvg.h>
 #if !((FREETYPE_MAJOR >= 2) && (FREETYPE_MINOR >= 12))
 #error IMGUI_ENABLE_FREETYPE_LUNASVG requires FreeType version >= 2.12
+#endif
+#ifndef LUNASVG_VERSION_MAJOR
+#error IMGUI_ENABLE_FREETYPE_LUNASVG requires LunaSvg version >= 3.0
+#endif
+#if !(LUNASVG_VERSION_MAJOR >= 3)
+#error IMGUI_ENABLE_FREETYPE_LUNASVG requires LunaSvg version >= 3.0
 #endif
 #endif
 
@@ -834,108 +841,149 @@ void ImGuiFreeType::SetAllocatorFunctions(void* (*alloc_func)(size_t sz, void* u
 #ifdef IMGUI_ENABLE_FREETYPE_LUNASVG
 // For more details, see https://gitlab.freedesktop.org/freetype/freetype-demos/-/blob/master/src/rsvg-port.c
 // The original code from the demo is licensed under CeCILL-C Free Software License Agreement (https://gitlab.freedesktop.org/freetype/freetype/-/blob/master/LICENSE.TXT)
+struct ImGuiLunasvgPortEntry
+{
+    ImGuiLunasvgPortEntry(FT_UShort start_glyph_id, FT_UShort end_glyph_id, std::unique_ptr<lunasvg::Document> document);
+    FT_UShort start_glyph_id;
+    FT_UShort end_glyph_id;
+    std::unique_ptr<lunasvg::Document> document;
+};
+
+inline ImGuiLunasvgPortEntry::ImGuiLunasvgPortEntry(FT_UShort start_glyph_id, FT_UShort end_glyph_id, std::unique_ptr<lunasvg::Document> document)
+    : start_glyph_id(start_glyph_id), end_glyph_id(end_glyph_id), document(std::move(document))
+{
+}
+
+using ImGuiLunasvgPortEntries = std::vector<ImGuiLunasvgPortEntry>;
+
 struct LunasvgPortState
 {
-    FT_Error            err = FT_Err_Ok;
-    lunasvg::Matrix     matrix;
-    std::unique_ptr<lunasvg::Document> svg = nullptr;
+    lunasvg::Matrix matrix;
+    lunasvg::Box extents;
+    lunasvg::Element element;
+    ImGuiLunasvgPortEntries entries;
 };
 
 static FT_Error ImGuiLunasvgPortInit(FT_Pointer* _state)
 {
-    *_state = IM_NEW(LunasvgPortState)();
+    *_state = new LunasvgPortState;
     return FT_Err_Ok;
 }
 
 static void ImGuiLunasvgPortFree(FT_Pointer* _state)
 {
-    IM_DELETE(*(LunasvgPortState**)_state);
+    delete (*(LunasvgPortState**)_state);
 }
 
 static FT_Error ImGuiLunasvgPortRender(FT_GlyphSlot slot, FT_Pointer* _state)
 {
     LunasvgPortState* state = *(LunasvgPortState**)_state;
+    if(state->element.isNull()) {
+        return FT_Err_Invalid_SVG_Document;
+    }
 
-    // If there was an error while loading the svg in ImGuiLunasvgPortPresetSlot(), the renderer hook still get called, so just returns the error.
-    if (state->err != FT_Err_Ok)
-        return state->err;
-
-    // rows is height, pitch (or stride) equals to width * sizeof(int32)
     lunasvg::Bitmap bitmap((uint8_t*)slot->bitmap.buffer, slot->bitmap.width, slot->bitmap.rows, slot->bitmap.pitch);
-    state->svg->setMatrix(state->svg->matrix().identity()); // Reset the svg matrix to the default value
-    state->svg->render(bitmap, state->matrix);              // state->matrix is already scaled and translated
-    state->err = FT_Err_Ok;
-    return state->err;
+    state->element.render(bitmap, lunasvg::Matrix::translated(-state->extents.x, -state->extents.y) * state->matrix);
+
+    slot->bitmap.pixel_mode = FT_PIXEL_MODE_BGRA;
+    slot->bitmap.num_grays = 256;
+    slot->format = FT_GLYPH_FORMAT_BITMAP;
+    return FT_Err_Ok;
+}
+
+static lunasvg::Document* ImGuiLunasvgPortLoad(LunasvgPortState* state, FT_SVG_Document ft_document, FT_UInt index)
+{
+    if(ft_document->start_glyph_id < ft_document->end_glyph_id) {
+        for(const auto& entry : state->entries) {
+            if(index >= entry.start_glyph_id && index <= entry.end_glyph_id) {
+                return entry.document.get();
+            }
+        }
+    }
+
+    auto document = lunasvg::Document::loadFromData(reinterpret_cast<const char*>(ft_document->svg_document), static_cast<size_t>(ft_document->svg_document_length));
+    if(document == nullptr)
+        return nullptr;
+    state->entries.emplace_back(ft_document->start_glyph_id, ft_document->end_glyph_id, std::move(document));
+    return state->entries.back().document.get();
 }
 
 static FT_Error ImGuiLunasvgPortPresetSlot(FT_GlyphSlot slot, FT_Bool cache, FT_Pointer* _state)
 {
-    FT_SVG_Document   document = (FT_SVG_Document)slot->other;
+    FT_SVG_Document   ft_document = (FT_SVG_Document)slot->other;
+    FT_Size_Metrics&  ft_metrics = ft_document->metrics;
+
     LunasvgPortState* state = *(LunasvgPortState**)_state;
-    FT_Size_Metrics&  metrics = document->metrics;
+    state->element = lunasvg::Element();
+    state->matrix = lunasvg::Matrix();
+    state->extents = lunasvg::Box();
 
-    // This function is called twice, once in the FT_Load_Glyph() and another right before ImGuiLunasvgPortRender().
-    // If it's the latter, don't do anything because it's // already done in the former.
-    if (cache)
-        return state->err;
-
-    state->svg = lunasvg::Document::loadFromData((const char*)document->svg_document, document->svg_document_length);
-    if (state->svg == nullptr)
-    {
-        state->err = FT_Err_Invalid_SVG_Document;
-        return state->err;
+    auto document = ImGuiLunasvgPortLoad(state, ft_document, slot->glyph_index);
+    if(document == nullptr) {
+        return FT_Err_Invalid_SVG_Document;
     }
 
-    lunasvg::Box box = state->svg->box();
-    double scale = std::min(metrics.x_ppem / box.w, metrics.y_ppem / box.h);
-    double xx = (double)document->transform.xx / (1 << 16);
-    double xy = -(double)document->transform.xy / (1 << 16);
-    double yx = -(double)document->transform.yx / (1 << 16);
-    double yy = (double)document->transform.yy / (1 << 16);
-    double x0 = (double)document->delta.x / 64 * box.w / metrics.x_ppem;
-    double y0 = -(double)document->delta.y / 64 * box.h / metrics.y_ppem;
+    lunasvg::Element element;
+    if(ft_document->start_glyph_id < ft_document->end_glyph_id) {
+        char id[64];
+        std::sprintf(id, "glyph%u", slot->glyph_index);
+        element = document->getElementById(id);
+    } else {
+        element = document->documentElement();
+    }
 
-    // Scale and transform, we don't translate the svg yet
-    state->matrix.identity();
-    state->matrix.scale(scale, scale);
-    state->matrix.transform(xx, xy, yx, yy, x0, y0);
-    state->svg->setMatrix(state->matrix);
+    if(element.isNull()) {
+        return FT_Err_Invalid_SVG_Document;
+    }
 
-    // Pre-translate the matrix for the rendering step
-    state->matrix.translate(-box.x, -box.y);
+    auto extents = element.getLocalBoundingBox();
+    auto scale = std::min(ft_metrics.x_ppem / extents.w, ft_metrics.y_ppem / extents.h);
+    auto matrix = lunasvg::Matrix::scaled(scale, scale);
+    matrix *= lunasvg::Matrix {
+        (float)ft_document->transform.xx / (1 << 16),
+        -(float)ft_document->transform.xy / (1 << 16),
+        -(float)ft_document->transform.yx / (1 << 16),
+        (float)ft_document->transform.yy / (1 << 16),
+        (float)ft_document->delta.x / 64 * extents.w / ft_metrics.x_ppem,
+        -(float)ft_document->delta.y / 64 * extents.h / ft_metrics.y_ppem
+    };
 
-    // Get the box again after the transformation
-    box = state->svg->box();
+    extents.transform(matrix);
 
-    // Calculate the bitmap size
-    slot->bitmap_left = FT_Int(box.x);
-    slot->bitmap_top = FT_Int(-box.y);
-    slot->bitmap.rows = (unsigned int)(ImCeil((float)box.h));
-    slot->bitmap.width = (unsigned int)(ImCeil((float)box.w));
-    slot->bitmap.pitch = slot->bitmap.width * 4;
+    slot->bitmap_left = (FT_Int)extents.x;
+    slot->bitmap_top = (FT_Int)-extents.y;
+
+    slot->bitmap.rows = (unsigned int)ceilf(extents.h);
+    slot->bitmap.width = (unsigned int)ceilf(extents.w);
+    slot->bitmap.pitch = (int)slot->bitmap.width * 4;
     slot->bitmap.pixel_mode = FT_PIXEL_MODE_BGRA;
 
-    // Compute all the bearings and set them correctly. The outline is scaled already, we just need to use the bounding box.
-    double metrics_width = box.w;
-    double metrics_height = box.h;
-    double horiBearingX = box.x;
-    double horiBearingY = -box.y;
-    double vertBearingX = slot->metrics.horiBearingX / 64.0 - slot->metrics.horiAdvance / 64.0 / 2.0;
-    double vertBearingY = (slot->metrics.vertAdvance / 64.0 - slot->metrics.height / 64.0) / 2.0;
-    slot->metrics.width = FT_Pos(IM_ROUND(metrics_width * 64.0));   // Using IM_ROUND() assume width and height are positive
-    slot->metrics.height = FT_Pos(IM_ROUND(metrics_height * 64.0));
-    slot->metrics.horiBearingX = FT_Pos(horiBearingX * 64);
-    slot->metrics.horiBearingY = FT_Pos(horiBearingY * 64);
-    slot->metrics.vertBearingX = FT_Pos(vertBearingX * 64);
-    slot->metrics.vertBearingY = FT_Pos(vertBearingY * 64);
+    float metrics_width = extents.w;
+    float metrics_height = extents.h;
 
-    if (slot->metrics.vertAdvance == 0)
-        slot->metrics.vertAdvance = FT_Pos(metrics_height * 1.2 * 64.0);
+    float horiBearingX = extents.x;
+    float horiBearingY = -extents.y;
 
-    state->err = FT_Err_Ok;
-    return state->err;
+    float vertBearingX = slot->metrics.horiBearingX / 64.f - slot->metrics.horiAdvance / 64.f / 2;
+    float vertBearingY = (slot->metrics.vertAdvance / 64.f - slot->metrics.height / 64.f) / 2;
+
+    slot->metrics.width = (FT_Pos)roundf(metrics_width * 64);
+    slot->metrics.height = (FT_Pos)roundf(metrics_height * 64);
+
+    slot->metrics.horiBearingX = (FT_Pos)(horiBearingX * 64);
+    slot->metrics.horiBearingY = (FT_Pos)(horiBearingY * 64);
+    slot->metrics.vertBearingX = (FT_Pos)(vertBearingX * 64);
+    slot->metrics.vertBearingY = (FT_Pos)(vertBearingY * 64);
+    if(slot->metrics.vertAdvance == 0)
+        slot->metrics.vertAdvance = (FT_Pos)(metrics_height * 1.2f * 64);
+    if(cache) {
+        state->element = element;
+        state->matrix = matrix;
+        state->extents = extents;
+    }
+
+    return FT_Err_Ok;
 }
-
 #endif // #ifdef IMGUI_ENABLE_FREETYPE_LUNASVG
 
 //-----------------------------------------------------------------------------
