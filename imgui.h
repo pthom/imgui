@@ -3890,13 +3890,20 @@ struct ImGuiPlatformIO
 
     // Optional: Access OS clipboard
     // (default to use native Win32 clipboard on Windows, otherwise uses a private clipboard. Override to access OS clipboard on other architectures)
-    const char* (*Platform_GetClipboardTextFn)(ImGuiContext* ctx);
-    void        (*Platform_SetClipboardTextFn)(ImGuiContext* ctx, const char* text);
+    // [ADAPT_IMGUI_BUNDLE]
+    // const char* (*Platform_GetClipboardTextFn)(ImGuiContext* ctx);
+    // void        (*Platform_SetClipboardTextFn)(ImGuiContext* ctx, const char* text);
+    BundleHybridCallback<BundleHybridStr(ImGuiContext*)> Platform_GetClipboardTextFn;
+    BundleHybridCallback<void(ImGuiContext*, const char*)> Platform_SetClipboardTextFn;
+    // [/ADAPT_IMGUI_BUNDLE]
     void*       Platform_ClipboardUserData;
 
     // Optional: Open link/folder/file in OS Shell
     // (default to use ShellExecuteA() on Windows, system() on Linux/Mac)
-    bool        (*Platform_OpenInShellFn)(ImGuiContext* ctx, const char* path);
+    // [ADAPT_IMGUI_BUNDLE]
+    //bool        (*Platform_OpenInShellFn)(ImGuiContext* ctx, const char* path);
+    BundleHybridCallback<bool(ImGuiContext*, const char*)> Platform_OpenInShellFn;
+    // [/ADAPT_IMGUI_BUNDLE]
     void*       Platform_OpenInShellUserData;
 
     // Optional: Notify OS Input Method Editor of the screen position of your cursor for text input position (e.g. when using Japanese/Chinese IME on Windows)
