@@ -4616,8 +4616,9 @@ const char* ImGui::GetClipboardText()
         clipboard_content = g.PlatformIO.Platform_GetClipboardTextFn(&g);
     }
     return clipboard_content.c_str();
-#endif
+#else
     return g.PlatformIO.Platform_GetClipboardTextFn ? g.PlatformIO.Platform_GetClipboardTextFn(&g) : "";
+#endif
 }
 
 void ImGui::SetClipboardText(const char* text)
