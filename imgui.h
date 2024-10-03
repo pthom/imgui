@@ -56,11 +56,27 @@
 #endif
 // [/ADAPT_IMGUI_BUNDLE]
 
+// [ADAPT_IMGUI_BUNDLE] utilities
+// - BundleHybridCallback: switches between function pointer and std::function
+// - BundleHybridStr: switches between const char* and std::string
+// - BundleHybridToChar: converts BundleHybridStr to const char*
+#ifdef IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    // We need to use std::function for the python bindings
+    template <typename Func> using BundleHybridCallback = std::function<Func>;
 
-
+    using BundleHybridStr = std::string;
+    inline const char* BundleHybridToChar(const BundleHybridStr& str) { return str.c_str(); }
+#else
+    // else, we use function pointers
+    template <typename Func> using BundleHybridCallback = Func*;
+    using BundleHybridStr = const char*;
+    inline const char* BundleHybridToChar(const char * str) { return str; }
+#endif // IMGUI_BUNDLE_PYTHON_API
+#endif // IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
+// [/ADAPT_IMGUI_BUNDLE] utilities
 
 /*
-
 Index of this file:
 // [SECTION] Header mess
 // [SECTION] Forward declarations and basic types
