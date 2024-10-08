@@ -3792,6 +3792,15 @@ struct ImFontGlyph
     int             PackId;             // [Internal] ImFontAtlasRectId value (FIXME: Cold data, could be moved elsewhere?)
 
     ImFontGlyph()   { memset(this, 0, sizeof(*this)); PackId = -1; }
+
+#ifdef IMGUI_BUNDLE_PYTHON_API
+	
+    // [ADAPT_IMGUI_BUNDLE]
+    bool isColored() const { return Colored != 0; }
+    bool isVisible() const { return Visible != 0; }
+    unsigned int getCodepoint() const { return Codepoint; }
+    // [/ADAPT_IMGUI_BUNDLE]
+#endif // IMGUI_BUNDLE_PYTHON_API
 };
 
 // Helper to build glyph ranges from text/string data. Feed your application strings/characters to it then call BuildRanges().
