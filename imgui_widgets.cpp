@@ -47,6 +47,13 @@ Index of this file:
 // System includes
 #include <stdint.h>     // intptr_t
 
+// [ADAPT_IMGUI_BUNDLE]
+// for InputTextMultiline tooltip within node editor
+#include <string>
+#include <vector>
+#include <sstream>
+// [/ADAPT_IMGUI_BUNDLE]
+
 //-------------------------------------------------------------------------
 // Warnings
 //-------------------------------------------------------------------------
@@ -3817,9 +3824,137 @@ bool ImGui::InputText(const char* label, char* buf, size_t buf_size, ImGuiInputT
     return InputTextEx(label, NULL, buf, (int)buf_size, ImVec2(0, 0), flags, callback, user_data);
 }
 
+// [ADAPT_IMGUI_BUNDLE] cf
+bool Priv_ImGuiNodeEditor_IsInCanvas();
+// [/ADAPT_IMGUI_BUNDLE]
+
+
 bool ImGui::InputTextMultiline(const char* label, char* buf, size_t buf_size, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 {
-    return InputTextEx(label, NULL, buf, (int)buf_size, size, flags | ImGuiInputTextFlags_Multiline, callback, user_data);
+    // [ADAPT_IMGUI_BUNDLE] cf
+    // When inside imgui-node-editor canvas, we cannot open child windows
+    // In this case, we present a one line version of the input text,
+    // and offer the possibility to open a popup to edit the text in a multiline widget
+    if (Priv_ImGuiNodeEditor_IsInCanvas())
+    {
+        // Helper function to split and format the text for a tooltip
+        // to show an extract of the full text when hovering the button,
+        auto fn_format_tooltip = [](
+            const char* text, size_t max_line_length, size_t max_lines) -> std::string
+        {
+            auto fn_cut_string_after_max_length = [](const std::string& text, size_t max_length) -> std::string
+            {
+                if (text.size() <= max_length)
+                    return text;
+                std::string r = text.substr(0, max_length - 3) + "...";
+                return r;
+            };
+            auto fn_split_lines = [](const std::string& s) -> std::vector<std::string>
+            {
+                std::vector<std::string> lines;
+                std::istringstream f(s);
+                std::string line;
+                while (std::getline(f, line))
+                    lines.push_back(line);
+                return lines;
+            };
+            std::string r = "";
+            auto lines = fn_split_lines(text);
+            size_t n = 0;
+            for (const auto& line : lines)
+            {
+                if (n >= max_lines)
+                {
+                    r += "...\n";
+                    break;
+                }
+                r += fn_cut_string_after_max_length(line, max_line_length) + "\n";
+                n++;
+            }
+            return r;
+        };
+
+        // Helper function to make the text color more red
+        auto fn_redify_color = [](const ImVec4& color) -> ImVec4
+        {
+            ImVec4 redified_color;
+            redified_color.x = color.x;
+            redified_color.y = 0.6f * color.y;
+            redified_color.z = 0.6f * color.z;
+            redified_color.w = color.w;
+            return redified_color;
+        };
+
+        // Intro
+        PushID(label); // make sure to use unique ids
+        bool changed = false;
+        ImGui::BeginGroup();
+
+        // A- One line version text, without the label
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        float btn_additional_width = CalcTextSize("...").x + style.FramePadding.x * 2.0f;// + style.ItemInnerSpacing.x;
+        float one_line_widget_width = size.x > 0.f ? size.x : CalcItemWidth();
+        one_line_widget_width -= btn_additional_width;
+        ImGui::SetNextItemWidth(one_line_widget_width);
+        if (InputText("##hidden_label", buf, buf_size, flags, callback, user_data))
+            changed = true;
+
+        // B- Add a button to open a popup to edit the text
+        //   i. First, move the cursor to the left, so that the button appears right next to the input text
+        //ImVec2 pos = ImGui::GetCursorScreenPos();
+        //pos.x = pos.x - style.ItemSpacing.x; // + style.ItemInnerSpacing.x;
+        pos.x += one_line_widget_width - 1.f;
+        ImGui::SetCursorScreenPos(pos);
+        //   ii. Then add the button
+        bool shall_display_tooltip = strchr(buf, '\n') != NULL;
+        if (shall_display_tooltip)
+        {
+            ImVec4 color = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+            ImGui::PushStyleColor(ImGuiCol_Text, fn_redify_color(color));
+        }
+        bool was_button_pressed = false;
+        if (Button("..."))
+        {
+            was_button_pressed = true;
+            OpenPopup("InputTextMultilinePopup");
+        }
+        if (shall_display_tooltip)
+            ImGui::PopStyleColor();
+
+        if (shall_display_tooltip && ! was_button_pressed)
+            ImGui::SetItemTooltip("%s", fn_format_tooltip(buf, 60, 3).c_str());
+
+        // C. Finally, add the label (up until "##")
+        const char* label_end = FindRenderedTextEnd(label);
+        pos.x += style.ItemInnerSpacing.x + btn_additional_width;
+        ImGui::SetCursorScreenPos(pos);
+        TextUnformatted(label, label_end);
+
+        ImGui::EndGroup();
+
+        // D. Handle the popup
+        if (ImGui::BeginPopup("InputTextMultilinePopup"))
+        {
+            // Note: there is no infinite recursion here, since we are not inside the canvas anymore
+            // (as soon as BeginPopup return true, we are outside the canvas)
+            // (iif the patches https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-1681806764
+            //  and https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-2404714757 are applied)
+            ImVec2 size_multiline = size;
+            size_multiline.x = one_line_widget_width;
+            if (InputTextMultiline("##edit", buf, buf_size, size_multiline, flags, callback, user_data))
+                changed = true;
+            EndPopup();
+        }
+        PopID();
+        return changed;
+    }
+    // [/ADAPT_IMGUI_BUNDLE]
+    else
+    {
+        // Standard behavior outside of imgui-node-editor canvas
+        return InputTextEx(label, NULL, buf, (int)buf_size, size, flags | ImGuiInputTextFlags_Multiline, callback, user_data);
+    }
 }
 
 bool ImGui::InputTextWithHint(const char* label, const char* hint, char* buf, size_t buf_size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
