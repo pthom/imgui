@@ -1283,6 +1283,14 @@ static ImGuiMemAllocFunc    GImAllocatorAllocFunc = MallocWrapper;
 static ImGuiMemFreeFunc     GImAllocatorFreeFunc = FreeWrapper;
 static void*                GImAllocatorUserData = NULL;
 
+// [ADAPT_IMGUI_BUNDLE] inform that child windows are incompatible with imgui-node-editor (cf https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-2404714757)
+static bool gIsInNodeEditorCanvas = false;
+void Priv_ImGuiNodeEditor_EnterCanvas() { gIsInNodeEditorCanvas = true; }
+void Priv_ImGuiNodeEditor_ExitCanvas() { gIsInNodeEditorCanvas = false; }
+bool Priv_ImGuiNodeEditor_IsInCanvas() { return gIsInNodeEditorCanvas; }
+// [/ADAPT_IMGUI_BUNDLE]
+
+
 //-----------------------------------------------------------------------------
 // [SECTION] USER FACING STRUCTURES (ImGuiStyle, ImGuiIO, ImGuiPlatformIO)
 //-----------------------------------------------------------------------------
@@ -5989,6 +5997,25 @@ bool ImGui::BeginChild(ImGuiID id, const ImVec2& size_arg, ImGuiChildFlags child
 
 bool ImGui::BeginChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, ImGuiChildFlags child_flags, ImGuiWindowFlags window_flags)
 {
+    // [ADAPT_IMGUI_BUNDLE] inform that child windows are incompatible with imgui-node-editor (cf https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-2404714757)
+    if (Priv_ImGuiNodeEditor_IsInCanvas())
+    {
+            const char* msg = R"(
+    Sorry, some ImGui widgets are incompatible withing imgui-node-editor, and cannot be used while its canvas is active.
+        Incompatible widgets are:
+            ImGui::InputTextMultiline()
+            ImGui::BeginListbox() and ImGui::EndListbox()
+            ImGui::BeginChild() and ImGui::EndChild()
+
+        )";
+        if ((name != nullptr) && (strlen(name) > 0))
+            fprintf(stderr, "%sImGui::BeginChildEx was called with name=%s\n", msg, name);
+        else
+            fprintf(stderr, "%s(no name available, please examine the call stack)\n", msg);
+        IM_ASSERT(false && "ImGui::BeginChild should not be called inside a node editor canvas");
+    }
+    // [/ADAPT_IMGUI_BUNDLE]
+
     ImGuiContext& g = *GImGui;
     ImGuiWindow* parent_window = g.CurrentWindow;
     IM_ASSERT(id != 0);
