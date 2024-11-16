@@ -3649,6 +3649,7 @@ struct ImDrawList
     IMGUI_API void  PathBezierQuadraticCurveTo(const ImVec2& p2, const ImVec2& p3, int num_segments = 0);               // Quadratic Bezier (3 control points)
     IMGUI_API void  PathRect(const ImVec2& rect_min, const ImVec2& rect_max, float rounding = 0.0f, ImDrawFlags flags = 0);
 
+#ifdef IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
     // Advanced: Draw Callbacks
     // - May be used to alter render state (change sampler, blending, current shader). May be used to emit custom rendering commands (difficult to do correctly, but possible).
     // - Use special ImDrawCallback_ResetRenderState callback to instruct backend to reset its render state to the default.
@@ -3659,6 +3660,7 @@ struct ImDrawList
     //   - If userdata_size > 0,  we copy/store 'userdata_size' bytes pointed to by 'userdata'. We store them in a buffer stored inside the drawlist. ImDrawCmd::UserCallbackData will point inside that buffer so you have to retrieve data from there. Your callback may need to use ImDrawCmd::UserCallbackDataSize if you expect dynamically-sized data.
     //   - Support for userdata_size > 0 was added in v1.91.4, October 2024. So earlier code always only allowed to copy/store a simple void*.
     IMGUI_API void  AddCallback(ImDrawCallback callback, void* userdata, size_t userdata_size = 0);
+#endif
 
     // Advanced: Miscellaneous
     IMGUI_API void  AddDrawCmd();                                               // This is useful if you need to forcefully create a new draw call (to allow for dependent rendering / blending). Otherwise primitives are merged into the same draw-call as much as possible
