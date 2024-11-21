@@ -10913,9 +10913,9 @@ void ImGuiDemoMarker_GuiToggle()
             "\n"
             "(you can also press \"Ctrl-Alt-C\" at any time to toggle this mode)"
         );
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_C)) && ImGui::GetIO().KeyCtrl && ImGui::GetIO().KeyAlt)
+    if (ImGui::IsKeyPressed(ImGuiKey_C) && ImGui::GetIO().KeyCtrl && ImGui::GetIO().KeyAlt)
         GImGuiDemoMarker_IsActive = !GImGuiDemoMarker_IsActive;
-    if (GImGuiDemoMarker_IsActive && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+    if (GImGuiDemoMarker_IsActive && ImGui::IsKeyPressed(ImGuiKey_Escape))
         GImGuiDemoMarker_IsActive = false;
 }
 
