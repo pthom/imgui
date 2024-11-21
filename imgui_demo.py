@@ -924,7 +924,7 @@ def show_demo_window_widgets():
                 node_flags = static.base_flags
                 is_selected = (static.selection_mask & (1 << i)) != 0
                 if is_selected:
-                    node_flags |= imgui.TreeNodeFlags_.selected
+                    node_flags |= imgui.TreeNodeFlags_.selected.value
                 if i < 3:
                     # Items 0..2 are Tree Nodes.
                     node_open = imgui.tree_node_ex(str(i), node_flags, f"Selectable Node {i}")
@@ -1128,7 +1128,7 @@ def show_demo_window_widgets():
             imgui.text(f"Max: ({region_x + region_sz:.2f}, {region_y + region_sz:.2f})")
             uv0 = ImVec2((region_x) / my_tex_w, (region_y) / my_tex_h)
             uv1 = ImVec2((region_x + region_sz) / my_tex_w, (region_y + region_sz) / my_tex_h)
-            imgui.image(my_tex_id, ImVec2(region_sz * 4.0, region_sz * 4.0), uv0, uv1, tint_col, border_col)
+            imgui.image(my_tex_id, ImVec2(region_sz * 4.0, region_sz * 4.0), uv0, uv1, tint_col, border_col)  # type: ignore
             imgui.end_tooltip()
 
         # Textured buttons
