@@ -750,12 +750,31 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
     ImGui_ImplGlfw_ContextMap_Add(window, bd->Context);
 
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+
 #if GLFW_VERSION_COMBINED < 3300
     platform_io.Platform_SetClipboardTextFn = [](ImGuiContext*, const char* text) { glfwSetClipboardString(ImGui_ImplGlfw_GetBackendData()->Window, text); };
-    platform_io.Platform_GetClipboardTextFn = [](ImGuiContext*) { return glfwGetClipboardString(ImGui_ImplGlfw_GetBackendData()->Window); };
+    platform_io.Platform_GetClipboardTextFn = [](ImGuiContext*) {
+        const char* r = glfwGetClipboardString(ImGui_ImplGlfw_GetBackendData()->Window);
+        // This is needed for ImGui Bundle's python bindings, where Platform_GetClipboardTextFn is intended to return a string, not a char*.
+#ifdef IMGUI_BUNDLE_PYTHON_API
+        static char empty[] = "";
+        if (r == NULL)
+            r = empty;
+#endif
+        return r;
+    };
 #else
     platform_io.Platform_SetClipboardTextFn = [](ImGuiContext*, const char* text) { glfwSetClipboardString(nullptr, text); };
-    platform_io.Platform_GetClipboardTextFn = [](ImGuiContext*) { return glfwGetClipboardString(nullptr); };
+    platform_io.Platform_GetClipboardTextFn = [](ImGuiContext*) {
+        const char* r = glfwGetClipboardString(nullptr);
+        // This is needed for ImGui Bundle's python bindings, where Platform_GetClipboardTextFn is intended to return a string, not a char*.
+        #ifdef IMGUI_BUNDLE_PYTHON_API
+        static char empty[] = "";
+        if (r == NULL)
+            r = empty;
+        #endif
+        return r;
+    };
 #endif
 
 #ifdef __EMSCRIPTEN__
