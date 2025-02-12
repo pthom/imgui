@@ -57,6 +57,5 @@ _Compilation hints for plutovg_
 _Compilation hints for plutosvg_
 - Compile `plutosvg/source/plutosvg.c`
 - Add include directory: `plutosvg/source`
-- Add define: `PLUTOSVG_HAS_FREETYPE`
 - Link with: plutovg, freetype
 

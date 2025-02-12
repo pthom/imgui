@@ -56,7 +56,7 @@
 #include <lunasvg.h>
 #endif
 #ifdef  IMGUI_ENABLE_FREETYPE_PLUTOSVG
-#include <plutosvg.h>
+#include <plutosvg-ft.h>
 #endif
 #if defined(IMGUI_ENABLE_FREETYPE_LUNASVG) || defined (IMGUI_ENABLE_FREETYPE_PLUTOSVG)
 #if !((FREETYPE_MAJOR >= 2) && (FREETYPE_MINOR >= 12))
@@ -826,7 +826,7 @@ static bool ImFontAtlasBuildWithFreeType(ImFontAtlas* atlas)
 #endif // IMGUI_ENABLE_FREETYPE_LUNASVG
 #ifdef IMGUI_ENABLE_FREETYPE_PLUTOSVG
     // With plutosvg, use provided hooks
-    FT_Property_Set(ft_library, "ot-svg", "svg-hooks", plutosvg_ft_svg_hooks());
+    FT_Property_Set(ft_library, "ot-svg", "svg-hooks", &plutosvg_ft_hooks);
 #endif // IMGUI_ENABLE_FREETYPE_PLUTOSVG
 
     bool ret = ImFontAtlasBuildWithFreeTypeEx(ft_library, atlas, atlas->FontBuilderFlags);
