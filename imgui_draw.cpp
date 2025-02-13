@@ -5713,6 +5713,17 @@ const char* ImFontCalcWordWrapPositionEx(ImFont* font, float size, const char* t
     return s;
 }
 
+#ifdef IMGUI_BUNDLE_PYTHON_API
+int ImFont::CalcWordWrapPositionPython(float size, const char* text, float wrap_width)
+{
+    const char* text_end = text + strlen(text);
+    const char* word_wrap_eol = ImFont::CalcWordWrapPosition(size, text, text_end, wrap_width);
+    int idx = static_cast<int>(word_wrap_eol - text);
+    return idx;
+}
+#endif
+
+
 const char* ImFont::CalcWordWrapPosition(float size, const char* text, const char* text_end, float wrap_width)
 {
     return ImFontCalcWordWrapPositionEx(this, size, text, text_end, wrap_width, ImDrawTextFlags_None);
