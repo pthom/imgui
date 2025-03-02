@@ -106,6 +106,10 @@ Index of this file:
 #endif
 
 #include "imgui.h"
+#ifdef INSIDE_IMGUI_BUNDLE
+#include "../../imgui_md/imgui_md_wrapper/imgui_md_wrapper.h"
+#include "../../ImGuiColorTextEdit/ImGuiColorTextEdit/TextEditor.h"
+#endif
 #ifndef IMGUI_DISABLE
 
 // System includes
@@ -11262,6 +11266,78 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
             }
         }
 
+        void RenderSimpleEditor()
+        {
+            ImGui::BeginChild("Code Child");
+            if (EditorLine_NavigateTo >= 0)
+            {
+                ImGui::SetScrollY(EditorLine_NavigateTo * ImGui::GetFontSize() - ImGui::GetFontSize());
+                ImGui::SetScrollX(0.f);
+                EditorLine_LastSelected = EditorLine_NavigateTo;
+                EditorLine_NavigateTo = -1;
+            }
+
+            if (ShowPythonCode && SourceCodePython != NULL)
+            {
+                ImGui::TextUnformatted(SourceLineNumbersPythonStr);
+                ImGui::SameLine();
+                ImGui::TextUnformatted(SourceCodePython);
+            }
+            else
+            {
+                ImGui::TextUnformatted(SourceLineNumbersStr);
+                ImGui::SameLine();
+                ImGui::TextUnformatted(SourceCode);
+            }
+
+            ImGui::EndChild();
+        }
+
+#ifdef INSIDE_IMGUI_BUNDLE       
+        void RenderAdvancedEditor()
+        {
+            static TextEditor editor;
+            
+            auto ShowPaletteButtons = []()
+            {
+                if (ImGui::SmallButton("Dark palette"))
+                    editor.SetPalette(TextEditor::PaletteId::Dark);
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Light palette"))
+                    editor.SetPalette(TextEditor::PaletteId::Light);
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Retro blue palette"))
+                    editor.SetPalette(TextEditor::PaletteId::RetroBlue);
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Mariana palette"))
+                    editor.SetPalette(TextEditor::PaletteId::Mariana);
+            };
+
+            if (ShowPythonCode && SourceCodePython != NULL)
+            {
+                editor.SetText(SourceCodePython, false);
+                editor.SetLanguageDefinition(TextEditor::LanguageDefinitionId::Python);
+            }
+            else
+            {
+                editor.SetText(SourceCode, false);
+                editor.SetLanguageDefinition(TextEditor::LanguageDefinitionId::Cpp);
+            }
+
+            if (EditorLine_NavigateTo >= 0)
+            {
+                EditorLine_LastSelected = EditorLine_NavigateTo;
+                editor.SetViewAtLine(EditorLine_NavigateTo, TextEditor::SetViewAtLineMode::Centered);
+                EditorLine_NavigateTo = -1;
+            }
+
+            ShowPaletteButtons();
+            ImGui::PushFont(ImGuiMd::GetCodeFont());
+            editor.Render("Code");
+            ImGui::PopFont();
+        }
+#endif   // INSIDE_IMGUI_BUNDLE
+
         void Gui()
         {
             if (SourceCode == NULL)
@@ -11301,30 +11377,13 @@ namespace ImGuiDemoMarkerCodeViewer_Impl
                 ImGui::SameLine();
                 ImGui::TextDisabled("(view imgui_demo on github at line %i)", EditorLine_LastSelected);
 
-                ImGui::BeginChild("Code Child");
-                if (EditorLine_NavigateTo >= 0)
-                {
-                    ImGui::SetScrollY(EditorLine_NavigateTo * ImGui::GetFontSize() - ImGui::GetFontSize());
-                    ImGui::SetScrollX(0.f);
-                    EditorLine_LastSelected = EditorLine_NavigateTo;
-                    EditorLine_NavigateTo = -1;
-                }
-
-                //[Bundle]
-                if (ShowPythonCode && SourceCodePython != NULL)
-                {
-                    ImGui::TextUnformatted(SourceLineNumbersPythonStr);
-                    ImGui::SameLine();
-                    ImGui::TextUnformatted(SourceCodePython);
-                }
-                else
-                {
-                    ImGui::TextUnformatted(SourceLineNumbersStr);
-                    ImGui::SameLine();
-                    ImGui::TextUnformatted(SourceCode);
-                }
-
-                ImGui::EndChild();
+#ifdef INSIDE_IMGUI_BUNDLE
+                // Advanced editor with syntax highlighting
+                RenderAdvancedEditor();
+#else
+                // Simple text editor
+                RenderSimpleEditor();
+#endif
             }
             ImGui::End();
         }
