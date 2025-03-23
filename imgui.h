@@ -3687,8 +3687,12 @@ struct IMGUI_API ImTextureData
     ~ImTextureData()    { DestroyPixels(); }
     void                Create(ImTextureFormat format, int w, int h);
     void                DestroyPixels();
+
+    // Note: in Python, use imgui.im_texture_data_get_pixels(tex) to get the data as a numpy array.
     unsigned char*      GetPixels()                 { IM_ASSERT(Pixels != NULL); return Pixels; }
+
     unsigned char*      GetPixelsAt(int x, int y)   { IM_ASSERT(Pixels != NULL); return Pixels + (x + y * Width) * BytesPerPixel; }
+
     int                 GetSizeInBytes() const      { return Width * Height * BytesPerPixel; }
     int                 GetPitch() const            { return Width * BytesPerPixel; }
     ImTextureRef        GetTexRef()                 { ImTextureRef tex_ref; tex_ref._TexData = this; tex_ref._TexID = ImTextureID_Invalid; return tex_ref; }
