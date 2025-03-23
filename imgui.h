@@ -4103,6 +4103,16 @@ struct ImFontAtlas
 #endif
     ImTextureData*              TexData;            // Latest texture.
 
+    // Convenience method for python in order to set the font texture Id
+    // Note: this uses the old way of setting the fonts texture.
+    // Newer backends should implement ImGuiBackendFlags_RendererHasTextures
+    // and be able to handle Texture updates
+    // See https://github.com/ocornut/imgui/issues/8465
+    // For inspiration, look at
+    //        def _update_texture(self, tex: imgui.ImTextureData):
+    // inside ImGui Bundle (bindings/imgui_bundle/python_backends/opengl_xxx_backend.py)
+    void Python_SetTextureID(ImTextureID id) { TexRef = ImTextureRef(id); }
+
     // [Internal]
     ImVector<ImTextureData*>    TexList;            // Texture list (most often TexList.Size == 1). TexData is always == TexList.back(). DO NOT USE DIRECTLY, USE GetDrawData().Textures[]/GetPlatformIO().Textures[] instead!
     bool                        Locked;             // Marked as locked during ImGui::NewFrame()..EndFrame() scope if TexUpdates are not supported. Any attempt to modify the atlas will assert.
