@@ -49,6 +49,16 @@
 #include <functional>
 #include <string>
 #include <map>
+#include <cstdint>
+
+// ImGuiNpBuffer (specific to python Bindings)
+// An array of data shared between python and C++ as a numpy array (a one dimensional array of bytes)
+struct ImGuiNpBuffer
+{
+    uint8_t *   Data;
+    int         Size;
+};
+
 #endif
 // IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API is always defined (even when building python bindings),
 // but is used as a marker to exclude certain functions from the python binding code.
@@ -3841,10 +3851,18 @@ struct ImTextureData
     IMGUI_API void      Create(ImTextureFormat format, int w, int h);
     IMGUI_API void      DestroyPixels();
 
-    // Note: in Python, use imgui.im_texture_data_get_pixels(tex) to get the data as a numpy array.
-    void*               GetPixels()                 { IM_ASSERT(Pixels != NULL); return Pixels; }
+    #ifdef IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
+    void*      GetPixels()                 { IM_ASSERT(Pixels != NULL); return Pixels; }
+    void*      GetPixelsAt(int x, int y)   { IM_ASSERT(Pixels != NULL); return Pixels + (x + y * Width) * BytesPerPixel; }
+    #endif
 
-    void*               GetPixelsAt(int x, int y)   { IM_ASSERT(Pixels != NULL); return Pixels + (x + y * Width) * BytesPerPixel; }
+    #ifdef IMGUI_BUNDLE_PYTHON_API
+    // GetPixelsArray(): returns the pixel data as a NumPy array.
+    //
+    // Note: GetPixelsAt(x, y) is not implemented for Python, but you can use the offset below:
+    //    offset = (y * tex.width + x) * tex.bytes_per_pixel
+    ImGuiNpBuffer       GetPixelsArray()          { return ImGuiNpBuffer{Pixels, Width * Height * BytesPerPixel}; }
+    #endif
 
     int                 GetSizeInBytes() const      { return Width * Height * BytesPerPixel; }
     int                 GetPitch() const            { return Width * BytesPerPixel; }
