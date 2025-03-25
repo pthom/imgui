@@ -3622,6 +3622,10 @@ namespace ImGui
     inline    ImGuiWindow*  GetCurrentWindowRead()      { ImGuiContext& g = *GImGui; return g.CurrentWindow; }
     inline    ImGuiWindow*  GetCurrentWindow()
     {
+        #ifdef IMGUI_BUNDLE_PYTHON_API
+        // Help python users, because otherwise, this leads to an un-debuggable segfault
+        IM_ASSERT(GImGui != NULL && "ImGui::GetCurrentWindow() -> ImGuiContext is NULL. This is likely because you are calling ImGui functions even before ImGui::CreateContext().");
+        #endif
         ImGuiContext& g = *GImGui;
         #ifdef IMGUI_BUNDLE_PYTHON_API
         // Help python users, because otherwise, this leads to an un-debuggable segfault
