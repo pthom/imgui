@@ -4170,7 +4170,9 @@ struct ImFontAtlas
 #endif
     ImTextureData*              TexData;            // Latest texture.
 
-    // Convenience method for python in order to set the font texture Id
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    // Convenience methods for python in order to get/set the font texture Id
+    // (because currently TexID is in a union and we can't access it directly)
     // Note: this uses the old way of setting the fonts texture.
     // Newer backends should implement ImGuiBackendFlags_RendererHasTextures
     // and be able to handle Texture updates
@@ -4178,7 +4180,9 @@ struct ImFontAtlas
     // For inspiration, look at
     //        def _update_texture(self, tex: imgui.ImTextureData):
     // inside ImGui Bundle (bindings/imgui_bundle/python_backends/opengl_xxx_backend.py)
-    void Python_SetTextureID(ImTextureID id) { TexRef = ImTextureRef(id); }
+    void        Python_SetTextureID(ImTextureID id) { TexRef = ImTextureRef(id); }
+    ImTextureID Python_GetTextureID() { return TexRef.GetTexID(); }
+#endif
 
     // [Internal]
     ImVector<ImTextureData*>    TexList;            // Texture list (most often TexList.Size == 1). TexData is always == TexList.back(). DO NOT USE DIRECTLY, USE GetDrawData().Textures[]/GetPlatformIO().Textures[] instead!
