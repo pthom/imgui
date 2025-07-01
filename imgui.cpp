@@ -9839,6 +9839,14 @@ void ImGui::PushFont(ImFont* font, float font_size_base)
     SetCurrentFont(font, font_size_base, 0.0f);
 }
 
+#ifdef IMGUI_BUNDLE_PYTHON_API
+void ImGui::PushFont(std::optional<ImFont*> font, float font_size_base_unscaled)
+{
+    ImGui::PushFont(font.value_or(nullptr), font_size_base_unscaled);
+}
+#endif
+
+
 void  ImGui::PopFont()
 {
     ImGuiContext& g = *GImGui;
