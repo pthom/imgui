@@ -595,7 +595,13 @@ namespace ImGui
     //  - CORRECT:   PushFont(NULL, style.FontSizeBase * 2.0f)  // use current unscaled size x2 == make text twice bigger
     //  - INCORRECT: PushFont(NULL, GetFontSize())              // INCORRECT! using size after global factors already applied == GLOBAL SCALING FACTORS WILL APPLY TWICE!
     //  - INCORRECT: PushFont(NULL, GetFontSize() * 2.0f)       // INCORRECT! using size after global factors already applied == GLOBAL SCALING FACTORS WILL APPLY TWICE!
+#ifdef IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
     IMGUI_API void          PushFont(ImFont* font, float font_size_base_unscaled);          // Use NULL as a shortcut to keep current font. Use 0.0f to keep current size.
+#endif
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API void          PushFont(std::optional<ImFont*> font, float font_size_base_unscaled);          // Use None as a shortcut to keep current font. Use 0.0f to keep current size.
+#endif
+
     IMGUI_API void          PopFont();
     IMGUI_API ImFont*       GetFont();                                                      // get current font
     IMGUI_API float         GetFontSize();                                                  // get current scaled font size (= height in pixels). AFTER global scale factors applied. *IMPORTANT* DO NOT PASS THIS VALUE TO PushFont()! Use ImGui::GetStyle().FontSizeBase to get value before global scale factors.
