@@ -2889,10 +2889,16 @@ struct ImGuiIO
     // [ADAPT_IMGUI_BUNDLE]
 
     #ifdef IMGUI_BUNDLE_PYTHON_API
-    IMGUI_API void SetIniFilename(const char* filename);
+
+    // - The disk functions are automatically called if IniFilename != None
+    // - Set IniFilename to None to load/save manually. Read io.WantSaveIniSettings description about handling .ini saving manually.
+    // - Important: default value "imgui.ini" is relative to current working dir! Most apps will want to lock this to an absolute path (e.g. same path as executables).
+    IMGUI_API void SetIniFilename(std::optional<const char*> filename);
+
+    IMGUI_API std::string GetIniFilename() const;
+
     IMGUI_API void SetLogFilename(const char* filename);
-    IMGUI_API std::string GetIniFilename();
-    IMGUI_API std::string GetLogFilename();
+    IMGUI_API std::string GetLogFilename() const;
     #endif
     // [/ADAPT_IMGUI_BUNDLE]
 };

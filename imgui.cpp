@@ -2085,13 +2085,18 @@ ImGuiPlatformIO::ImGuiPlatformIO()
 
 // [ADAPT_IMGUI_BUNDLE]
 #ifdef IMGUI_BUNDLE_PYTHON_API
-void ImGuiIO::SetIniFilename(const char* filename)
+void ImGuiIO::SetIniFilename(std::optional<const char*> filename)
 {
-    // ImGuiIO::IniFilename is a bare pointer with no storage
-    // Let's add a permanent storage when customized by the user
-    static char sIniFilename[1024];
-    strncpy(sIniFilename, filename, 1024);
-    IniFilename = sIniFilename;
+    if (filename.has_value())
+    {
+        // ImGuiIO::IniFilename is a bare pointer with no storage
+        // Let's add a permanent storage when customized by the user
+        static char sIniFilename[1024];
+        strncpy(sIniFilename, filename.value(), 1024);
+        IniFilename = sIniFilename;
+    }
+    else
+        IniFilename = NULL;
 }
 void ImGuiIO::SetLogFilename(const char* filename)
 {
@@ -2101,11 +2106,11 @@ void ImGuiIO::SetLogFilename(const char* filename)
     strncpy(sLogFilename, filename, 1024);
     LogFilename = sLogFilename;
 }
-std::string ImGuiIO::GetIniFilename()
+std::string ImGuiIO::GetIniFilename() const
 {
     return IniFilename;
 }
-std::string ImGuiIO::GetLogFilename()
+std::string ImGuiIO::GetLogFilename() const
 {
     return LogFilename;
 }
