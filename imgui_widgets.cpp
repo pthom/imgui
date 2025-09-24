@@ -4081,8 +4081,24 @@ bool ImGui::InputTextMultiline(const char* label, char* buf, size_t buf_size, co
         float one_line_widget_width = size.x > 0.f ? size.x : CalcItemWidth();
         one_line_widget_width -= btn_additional_width;
         ImGui::SetNextItemWidth(one_line_widget_width);
-        if (InputText("##hidden_label", buf, buf_size, flags, callback, user_data))
-            changed = true;
+        // A.1 make it editable if text does not contain \n
+        char* newline_pos = strchr(buf, '\n');
+        bool contains_newline = newline_pos != NULL;
+        if (!contains_newline)
+        {
+            if (InputText("##hidden_label", buf, buf_size, flags, callback, user_data))
+                changed = true;
+        }
+        else
+        // A.2 Show it read-only if text contains \n
+        {
+            flags &= ~ImGuiInputTextFlags_ReadOnly;
+            *newline_pos = '\0';
+            InputText("##hidden_label", buf, buf_size, flags | ImGuiInputTextFlags_ReadOnly, callback, user_data);
+            *newline_pos = '\n';
+            if (IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                ImGui::SetTooltip("Click the button to edit all lines");
+        }
 
         // B- Add a button to open a popup to edit the text
         //   i. First, move the cursor to the left, so that the button appears right next to the input text
