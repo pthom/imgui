@@ -4050,9 +4050,24 @@ bool ImGui::InputTextMultiline(const char* label, char* buf, size_t buf_size, co
         // A- One line version text, without the label
         ImGuiStyle& style = ImGui::GetStyle();
         ImVec2 pos = ImGui::GetCursorScreenPos();
-        float btn_additional_width = CalcTextSize("...").x + style.FramePadding.x * 2.0f;// + style.ItemInnerSpacing.x;
+
         float one_line_widget_width = size.x > 0.f ? size.x : CalcItemWidth();
+        {
+            // The one line widget will use a width passed by ImGui::SetNextItemWidth(), if any
+            float nextItemDataWidth = -1.f;
+            {
+                ImGuiContext& g = *GImGui;
+                ImGuiWindow* window = g.CurrentWindow;
+                if (g.NextItemData.HasFlags & ImGuiNextItemDataFlags_HasWidth)
+                    nextItemDataWidth = g.NextItemData.Width;
+            }
+            if (nextItemDataWidth > 0.f)
+                one_line_widget_width = nextItemDataWidth;
+        }
+
+        float btn_additional_width = CalcTextSize("...").x + style.FramePadding.x * 2.0f;// + style.ItemInnerSpacing.x;
         one_line_widget_width -= btn_additional_width;
+
         ImGui::SetNextItemWidth(one_line_widget_width);
         // A.1 make it editable if text does not contain \n
         char* newline_pos = strchr(buf, '\n');
@@ -4114,7 +4129,7 @@ bool ImGui::InputTextMultiline(const char* label, char* buf, size_t buf_size, co
             // (iif the patches https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-1681806764
             //  and https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-2404714757 are applied)
             ImVec2 size_multiline = size;
-            size_multiline.x = one_line_widget_width;
+            // size_multiline.x = one_line_widget_width;
             if (InputTextMultiline("##edit", buf, buf_size, size_multiline, flags, callback, user_data))
                 changed = true;
             EndPopup();
