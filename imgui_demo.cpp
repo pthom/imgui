@@ -225,6 +225,13 @@ Index of this file:
 #endif
 #endif
 
+// IMGUI_DEMO_MARKER can be used to mark sections of the demo and link them to an interactive code browser.
+// In order to use it, define it to an actual macro via force-include.
+#ifndef IMGUI_DEMO_MARKER
+#define IMGUI_DEMO_MARKER(section)  // Called everywhere in the code to mark interesting sections for the reader.
+#define IMGUI_DEMO_MARKER_SHOW_SHORT_INFO()  // Called once to display additional GUI about the demo markers.
+#endif
+
 //-----------------------------------------------------------------------------
 // [SECTION] Forward Declarations
 //-----------------------------------------------------------------------------
@@ -282,13 +289,6 @@ static void HelpMarker(const char* desc)
     }
 }
 
-// Helper to wire demo markers located in code to an interactive browser
-typedef void (*ImGuiDemoMarkerCallback)(const char* file, int line, const char* section, void* user_data);
-extern ImGuiDemoMarkerCallback      GImGuiDemoMarkerCallback;
-extern void*                        GImGuiDemoMarkerCallbackUserData;
-ImGuiDemoMarkerCallback             GImGuiDemoMarkerCallback = NULL;
-void*                               GImGuiDemoMarkerCallbackUserData = NULL;
-#define IMGUI_DEMO_MARKER(section)  do { if (GImGuiDemoMarkerCallback != NULL) GImGuiDemoMarkerCallback("imgui_demo.cpp", __LINE__, section, GImGuiDemoMarkerCallbackUserData); } while (0)
 
 //-----------------------------------------------------------------------------
 // [SECTION] Demo Window / ShowDemoWindow()
@@ -429,6 +429,9 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
     ImGui::Spacing();
+
+    IMGUI_DEMO_MARKER_SHOW_SHORT_INFO();
+    ImGui::BeginChild("Demos");
 
     IMGUI_DEMO_MARKER("Help");
     if (ImGui::CollapsingHeader("Help"))
@@ -641,6 +644,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     DemoWindowInputs();
 
     // End of ShowDemoWindow()
+    ImGui::EndChild(); // </ImGui::BeginChild("Demos");>
     ImGui::PopItemWidth();
     ImGui::End();
 }
@@ -651,7 +655,6 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
 static void DemoWindowMenuBar(ImGuiDemoWindowData* demo_data)
 {
-    IMGUI_DEMO_MARKER("Menu");
     if (ImGui::BeginMenuBar())
     {
         if (ImGui::BeginMenu("Menu"))
@@ -8757,6 +8760,7 @@ static void ShowExampleAppMainMenuBar()
 // (future version will add explicit flags to BeginMenu() to request processing shortcuts)
 static void ShowExampleMenuFile()
 {
+    IMGUI_DEMO_MARKER("Examples");
     IMGUI_DEMO_MARKER("Examples/Menu");
     ImGui::MenuItem("(demo menu)", NULL, false, false);
     if (ImGui::MenuItem("New")) {}
