@@ -133,7 +133,7 @@
 #include <TargetConditionals.h>
 #endif
 #ifdef __EMSCRIPTEN__
-#include <emscripten/em_js.h>
+#include <emscripten.h>  // For EM_ASM
 #endif
 #undef Status // X11 headers are leaking this.
 
@@ -535,7 +535,16 @@ bool ImGui_ImplSDL2_ProcessEvent(const SDL_Event* event)
 }
 
 #ifdef __EMSCRIPTEN__
-EM_JS(void, ImGui_ImplSDL2_EmscriptenOpenURL, (char const* url), { url = url ? UTF8ToString(url) : null; if (url) window.open(url, '_blank'); });
+// Pyodide/SIDE_MODULE fix: Use EM_ASM instead of EM_JS to avoid undefined symbol issues
+// EM_JS creates a separate symbol that doesn't work well in SIDE_MODULE builds
+// EM_ASM embeds the JavaScript inline without creating external symbols
+void ImGui_ImplSDL2_EmscriptenOpenURL(char const* url)
+{
+    EM_ASM({
+        var url_str = $0 ? UTF8ToString($0) : null;
+        if (url_str) window.open(url_str, '_blank');
+    }, url);
+}
 #endif
 
 static bool ImGui_ImplSDL2_Init(SDL_Window* window, SDL_Renderer* renderer, void* sdl_gl_context)
