@@ -63,7 +63,23 @@ endif
 CPPFLAGS += -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
 #CPPFLAGS += -g
 CPPFLAGS += -Wall -Wformat -Os $(EMS)
-LDFLAGS += --shell-file ../libs/emscripten/shell_minimal.html
+
+# Custom HTML shell with drag-and-drop support
+# Replaces the default shell_minimal.html template
+LDFLAGS += --shell-file shell_drag_font.html
+
+# Export C++ functions so JavaScript can call them via Module.ccall()
+# - _main: Entry point (always required)
+# - _HandleFontFile: Our custom file handler callback
+# - _malloc/_free: Memory management from JavaScript
+LDFLAGS += -s EXPORTED_FUNCTIONS=['_main','_HandleFontFile','_malloc','_free']
+
+# Export Emscripten runtime methods needed by our JavaScript code
+# - ccall: Call C++ functions with signature checking
+# - cwrap: Alternative to ccall (creates wrapper functions)
+# - HEAPU8: Access to Emscripten heap as Uint8Array (for copying file data)
+LDFLAGS += -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','HEAPU8']
+
 LDFLAGS += $(EMS)
 
 ##---------------------------------------------------------------------

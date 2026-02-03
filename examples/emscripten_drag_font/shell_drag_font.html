@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en-us">
+  <!--
+    ============================================================================
+    Dear ImGui - Font Drag & Drop Example for Emscripten
+    ============================================================================
+    
+    This HTML shell template demonstrates how to implement file loading in a
+    browser-based ImGui application using Emscripten.
+    
+    KEY COMPONENTS:
+    
+    1. Hidden File Input Element:
+       <input type="file" id="fileInput" accept=".ttf,.otf,.ttc,.woff,.woff2" />
+       - Triggered by the "Browse for Font File..." button in the ImGui UI
+       - The accept attribute filters for font file types
+       - Remains hidden (display: none) for a cleaner UI
+    
+    2. Drag-and-Drop Implementation:
+       - HTML5 Drag and Drop API attached to the canvas element
+       - dragover: Prevents default behavior and shows visual feedback
+       - dragleave: Removes visual feedback when drag leaves canvas
+       - drop: Captures the dropped file and processes it
+       - CSS class 'drag-over' provides visual feedback (green dashed border)
+    
+    3. JavaScript-to-C++ Bridge:
+       - FileReader API reads file as ArrayBuffer (binary data)
+       - Module._malloc() allocates memory in Emscripten heap
+       - Module.HEAPU8 provides access to the heap as a Uint8Array
+       - Module.ccall() invokes the C++ HandleFontFile() function:
+           * First param: Function name (must match EXPORTED_FUNCTIONS)
+           * Second param: Return type (null for void)
+           * Third param: Parameter types array
+           * Fourth param: Actual parameter values
+       - Module._free() releases the temporary heap memory
+    
+    4. Emscripten Module Configuration:
+       - Module object configures the Emscripten runtime
+       - canvas: Points to the canvas element for rendering
+       - print/printErr: Redirect stdout/stderr to console
+       - {{{ SCRIPT }}}: Emscripten template variable for injecting the
+         generated JavaScript code (index.js)
+    
+    EXPORTED SYMBOLS (see Makefile.emscripten):
+    - EXPORTED_FUNCTIONS: ['_main','_HandleFontFile','_malloc','_free']
+    - EXPORTED_RUNTIME_METHODS: ['ccall','cwrap','HEAPU8']
+    
+    ============================================================================
+  -->
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"/>
+    <title>Dear ImGui - Font Drag & Drop Example</title>
+    <style>
+        body { margin: 0; background-color: black }
+        .emscripten {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            margin: 0px;
+            border: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: block;
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -o-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+            -ms-interpolation-mode: nearest-neighbor;
+        }
+        .emscripten.drag-over {
+            border: 3px dashed #4CAF50;
+            box-sizing: border-box;
+        }
+        #fileInput {
+            display: none;
+        }
+    </style>
+  </head>
+  <body>
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <input type="file" id="fileInput" accept=".ttf,.otf,.ttc,.woff,.woff2" />
+    <script type='text/javascript'>
+      var Module = {
+        preRun: [],
+        postRun: [],
+        print: (function() {
+            return function(text) {
+                text = Array.prototype.slice.call(arguments).join(' ');
+                console.log(text);
+            };
+        })(),
+        printErr: function(text) {
+            text = Array.prototype.slice.call(arguments).join(' ');
+            console.error(text);
+        },
+        canvas: (function() {
+            var canvas = document.getElementById('canvas');
+            return canvas;
+        })(),
+        setStatus: function(text) {
+            console.log("status: " + text);
+        },
+        monitorRunDependencies: function(left) {
+            // no run dependencies to log
+        }
+      };
+      window.onerror = function() {
+        console.log("onerror: " + event);
+      };
+
+      // ========================================================================
+      // File handling functions
+      // ========================================================================
+      
+      // Called from C++ via emscripten_run_script("openFilePicker();")
+      // when the user clicks the "Browse for Font File..." button
+      function openFilePicker() {
+        document.getElementById('fileInput').click();
+      }
+
+      // Core function that handles file processing for both methods:
+      // - File picker selection
+      // - Drag and drop
+      function processFile(file) {
+        if (!file) return;
+        
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          // Get file data as binary ArrayBuffer
+          var arrayBuffer = e.target.result;
+          var uint8Array = new Uint8Array(arrayBuffer);
+          
+          // Allocate memory in Emscripten heap
+          // This creates a temporary buffer that C++ can access
+          var bufferSize = uint8Array.length;
+          var bufferPtr = Module._malloc(bufferSize);
+          
+          // Copy JavaScript array to Emscripten heap memory
+          Module.HEAPU8.set(uint8Array, bufferPtr);
+          
+          // Call C++ function HandleFontFile() with:
+          //   - file.name: string (filename)
+          //   - bufferSize: number (file size in bytes)
+          //   - bufferPtr: number (pointer to data in Emscripten heap)
+          Module.ccall('HandleFontFile', null, ['string', 'number', 'number'], 
+                       [file.name, bufferSize, bufferPtr]);
+          
+          // Free the temporary buffer (C++ makes its own copy)
+          Module._free(bufferPtr);
+        };
+        // Start reading the file as binary data
+        reader.readAsArrayBuffer(file);
+      }
+
+      // ========================================================================
+      // File picker: triggered when user selects a file via the button
+      // ========================================================================
+      document.getElementById('fileInput').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        processFile(file);
+        // Reset input so the same file can be selected again
+        e.target.value = '';
+      });
+
+      // ========================================================================
+      // Drag and drop: HTML5 Drag and Drop API
+      // ========================================================================
+      var canvas = document.getElementById('canvas');
+      
+      // dragover: Required to enable dropping on this element
+      // Also provides visual feedback that drop is allowed
+      canvas.addEventListener('dragover', function(e) {
+        e.preventDefault();        // Prevent default to allow drop
+        e.stopPropagation();
+        canvas.classList.add('drag-over');  // Show green border
+      });
+      
+      // dragleave: Remove visual feedback when drag leaves the canvas
+      canvas.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        canvas.classList.remove('drag-over');  // Hide green border
+      });
+      
+      // drop: Process the dropped file
+      canvas.addEventListener('drop', function(e) {
+        e.preventDefault();        // Prevent browser from opening the file
+        e.stopPropagation();
+        canvas.classList.remove('drag-over');  // Hide green border
+        
+        // Get the first dropped file and process it
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+          processFile(files[0]);
+        }
+      });
+    </script>
+    {{{ SCRIPT }}}
+  </body>
+</html>

@@ -7,10 +7,38 @@
 // - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
 // - Introduction, links and more at the top of imgui.cpp
 
+// ============================================================================
+// EMSCRIPTEN DRAG & DROP DEMO
+// ============================================================================
+// This example demonstrates how to implement file drag-and-drop in a browser
+// using Emscripten. It shows two methods of loading files:
+//
+// 1. FILE PICKER BUTTON:
+//    - ImGui button triggers JavaScript via emscripten_run_script()
+//    - JavaScript opens a hidden HTML <input type="file"> element
+//    - User selects a file, triggering the 'change' event handler
+//
+// 2. DRAG AND DROP:
+//    - HTML5 drag-and-drop event listeners attached to the canvas
+//    - 'dragover' event shows visual feedback (green border)
+//    - 'drop' event captures the dropped file
+//
+// JAVASCRIPT TO C++ BRIDGE:
+//    - JavaScript reads file as ArrayBuffer using FileReader API
+//    - Allocates memory in Emscripten heap with Module._malloc()
+//    - Copies file data to the allocated memory
+//    - Calls HandleFontFile() C++ function via Module.ccall()
+//    - HandleFontFile() processes the data and stores it in g_fontFile
+//    - JavaScript frees the temporary memory with Module._free()
+//
+// The C++ side simply stores the file data and displays it in an ImGui window.
+// ============================================================================
+
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
+#include <string.h>
 #include <SDL.h>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <SDL_opengles2.h>
@@ -24,9 +52,147 @@
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
+#include <emscripten.h>
 #endif
 
-void gui(); // cf. gui.cpp
+// Global state for loaded font file
+struct FontFileData
+{
+    char filename[256];
+    unsigned char* data;
+    int size;
+    bool loaded;
+};
+
+static FontFileData g_fontFile = { "", nullptr, 0, false };
+
+// ============================================================================
+// HandleFontFile: JavaScript-callable C++ function
+// ============================================================================
+// This function is called from JavaScript (see shell_drag_font.html) via:
+//   Module.ccall('HandleFontFile', null, ['string', 'number', 'number'], 
+//                [filename, size, bufferPtr]);
+//
+// The EMSCRIPTEN_KEEPALIVE macro ensures this function is not optimized away
+// by the linker and remains accessible from JavaScript. The function is also
+// listed in EXPORTED_FUNCTIONS in Makefile.emscripten.
+//
+// Parameters:
+//   - filename: Original file name from the browser
+//   - size: Size of the file in bytes
+//   - buffer: Pointer to file data in Emscripten heap (allocated by JavaScript)
+//
+// The function:
+//   1. Frees any previously loaded file data
+//   2. Copies the filename to g_fontFile
+//   3. Allocates new memory and copies the file data
+//   4. Sets the loaded flag so the UI can display the file info
+//
+// Note: JavaScript is responsible for freeing the temporary buffer it allocates.
+// ============================================================================
+#ifdef __EMSCRIPTEN__
+extern "C" {
+    EMSCRIPTEN_KEEPALIVE
+    void HandleFontFile(const char* filename, int size, const unsigned char* buffer)
+    {
+        // Free previous data if any
+        if (g_fontFile.data)
+        {
+            free(g_fontFile.data);
+            g_fontFile.data = nullptr;
+        }
+        
+        // Store filename
+        strncpy(g_fontFile.filename, filename, sizeof(g_fontFile.filename) - 1);
+        g_fontFile.filename[sizeof(g_fontFile.filename) - 1] = '\0';
+        
+        // Copy buffer data
+        g_fontFile.size = size;
+        g_fontFile.data = (unsigned char*)malloc(size);
+        if (g_fontFile.data)
+        {
+            memcpy(g_fontFile.data, buffer, size);
+            g_fontFile.loaded = true;
+        }
+    }
+}
+#endif
+
+
+// GUI function
+static void ShowFontDragDropDemo()
+{
+    ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Font File Drag & Drop Demo");
+    
+    ImGui::Text("This demo shows how to load font files in the browser.");
+    ImGui::Separator();
+    
+    // Browse button
+    if (ImGui::Button("Browse for Font File..."))
+    {
+#ifdef __EMSCRIPTEN__
+        emscripten_run_script("openFilePicker();");
+#endif
+    }
+    
+    ImGui::SameLine();
+    ImGui::TextDisabled("(Or drag & drop a font file onto the window)");
+    
+    ImGui::Separator();
+    
+    // Display loaded file info
+    if (g_fontFile.loaded)
+    {
+        ImGui::Text("File loaded:");
+        ImGui::BulletText("Filename: %s", g_fontFile.filename);
+        ImGui::BulletText("Size: %d bytes", g_fontFile.size);
+        
+        ImGui::Separator();
+        ImGui::Text("First 32 bytes (hex):");
+        
+        // Display hex dump - 2 rows of 16 bytes each
+        int bytesToShow = (g_fontFile.size < 32) ? g_fontFile.size : 32;
+        char hexLine[128];
+        
+        // First row (bytes 0-15)
+        if (bytesToShow > 0)
+        {
+            hexLine[0] = '\0';
+            int firstRowBytes = (bytesToShow < 16) ? bytesToShow : 16;
+            for (int i = 0; i < firstRowBytes; i++)
+            {
+                char hex[4];
+                snprintf(hex, sizeof(hex), "%02X ", g_fontFile.data[i]);
+                strcat(hexLine, hex);
+            }
+            ImGui::Text("0x00: %s", hexLine);
+        }
+        
+        // Second row (bytes 16-31)
+        if (bytesToShow > 16)
+        {
+            hexLine[0] = '\0';
+            int secondRowBytes = bytesToShow - 16;
+            for (int i = 16; i < 16 + secondRowBytes; i++)
+            {
+                char hex[4];
+                snprintf(hex, sizeof(hex), "%02X ", g_fontFile.data[i]);
+                strcat(hexLine, hex);
+            }
+            ImGui::Text("0x10: %s", hexLine);
+        }
+    }
+    else
+    {
+        ImGui::TextDisabled("No font file loaded yet.");
+    }
+    
+    ImGui::End();
+}
+
+
 
 // Main code
 int main(int, char**)
@@ -156,8 +322,7 @@ int main(int, char**)
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::ShowDemoWindow();
-
+        ShowFontDragDropDemo();
 
         // Rendering
         ImGui::Render();
@@ -183,3 +348,4 @@ int main(int, char**)
 
     return 0;
 }
+
