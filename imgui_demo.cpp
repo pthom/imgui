@@ -5346,9 +5346,9 @@ static void DemoWindowLayout()
     }
 
 #if IMGUI_HAS_STACK_LAYOUT
-    IMGUI_DEMO_MARKER("Layout/Stack Layout");
     if (ImGui::TreeNode("Stack Layout"))
     {
+        IMGUI_DEMO_MARKER("Layout/Stack Layout");
         static bool widget_a = true, widget_b = true, widget_c = true;
         static bool spring_a = true, spring_ab = true, spring_bc = true, spring_c = true;
         static bool minimize_width = false, minimize_height = true;
