@@ -375,6 +375,11 @@ struct ImGuiDemoWindowData
 // You may then search for keywords in the code when you are interested by a specific feature.
 void ImGui::ShowDemoWindow(bool* p_open)
 {
+    ShowDemoWindow_MaybeDocked(true, p_open);
+}
+
+void ImGui::ShowDemoWindow_MaybeDocked(bool create_window, bool* p_open)
+{
     // Exceptionally add an extra assert here for people confused about initial Dear ImGui setup
     // Most functions would normally just assert/crash if the context is missing.
     IM_ASSERT(ImGui::GetCurrentContext() != NULL && "Missing Dear ImGui context. Refer to examples app!");
@@ -457,11 +462,14 @@ void ImGui::ShowDemoWindow(bool* p_open)
     }
 
     // Main body of the Demo window starts here.
-    if (!ImGui::Begin("Dear ImGui Demo", p_open, window_flags))
+    if (create_window)
     {
-        // Early out if the window is collapsed, as an optimization.
-        ImGui::End();
-        return;
+        if (!ImGui::Begin("Dear ImGui Demo", p_open, window_flags))
+        {
+            // Early out if the window is collapsed, as an optimization.
+            ImGui::End();
+            return;
+        }
     }
 
     // Most framed widgets share a common width settings. Remaining width is used for the label.
@@ -753,7 +761,9 @@ void ImGui::ShowDemoWindow(bool* p_open)
     // End of ShowDemoWindow()
     ImGui::EndChild(); // </ImGui::BeginChild("Demos");>
     ImGui::PopItemWidth();
-    ImGui::End();
+
+    if (create_window)
+        ImGui::End();
 }
 
 //-----------------------------------------------------------------------------
