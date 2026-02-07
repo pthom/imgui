@@ -476,6 +476,10 @@ namespace ImGui
 
     // Demo, Debug, Information
     IMGUI_API void          ShowDemoWindow(bool* p_open = NULL);        // create Demo window. demonstrate most ImGui features. call this to learn about the library! try to make it always available in your application!
+    //[ADAPT_IMGUI_BUNDLE]
+    IMGUI_API void          ShowDemoWindow_MaybeDocked(bool create_window, bool* p_open = NULL, ImGuiWindowFlags initial_extra_flags = 0, ImVec2 window_pos = ImVec2(0, 0), ImVec2 window_size = ImVec2(0, 0)); //
+    //[/ADAPT_IMGUI_BUNDLE]
+
     IMGUI_API void          ShowMetricsWindow(bool* p_open = NULL);     // create Metrics/Debugger window. display Dear ImGui internals: windows, draw commands, various internal state, etc.
     IMGUI_API void          ShowDebugLogWindow(bool* p_open = NULL);    // create Debug Log window. display a simplified log of important dear imgui events.
     IMGUI_API void          ShowIDStackToolWindow(bool* p_open = NULL); // create Stack Tool window. hover items with mouse to query information about the source of their unique ID.
