@@ -350,6 +350,18 @@ struct ImGuiDemoWindowData
 // You may then search for keywords in the code when you are interested by a specific feature.
 void ImGui::ShowDemoWindow(bool* p_open)
 {
+    const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 650, main_viewport->WorkPos.y + 20), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(550, 680), ImGuiCond_FirstUseEver);
+    ShowDemoWindow_MaybeDocked(true, p_open);
+}
+
+// [Bundle] This is used by imgui_manual to know if the demo window position should be imposed
+bool gIsImGuiDemoWindowUserEdited = true;
+bool gIsImGuiDemoWindow_no_close = true;
+
+void ImGui::ShowDemoWindow_MaybeDocked(bool create_window, bool* p_open, ImGuiWindowFlags initial_extra_flags, ImVec2 window_pos, ImVec2 window_size)
+{
     // Exceptionally add an extra assert here for people confused about initial Dear ImGui setup
     // Most functions would normally just assert/crash if the context is missing.
     IM_ASSERT(ImGui::GetCurrentContext() != NULL && "Missing Dear ImGui context. Refer to examples app!");
@@ -393,15 +405,18 @@ void ImGui::ShowDemoWindow(bool* p_open)
     static bool no_titlebar = false;
     static bool no_scrollbar = false;
     static bool no_menu = false;
-    static bool no_move = false;
-    static bool no_resize = false;
+    static bool no_move = (initial_extra_flags & ImGuiWindowFlags_NoMove) != 0;
+    static bool no_resize = (initial_extra_flags & ImGuiWindowFlags_NoResize) != 0;
     static bool no_collapse = false;
-    static bool no_close = false;
+    //static bool no_close = false;
     static bool no_nav = false;
     static bool no_background = false;
     static bool no_bring_to_front = false;
     static bool no_docking = false;
     static bool unsaved_document = false;
+
+    // [Bundle]
+    gIsImGuiDemoWindowUserEdited = (!no_move) || (!no_resize);
 
     ImGuiWindowFlags window_flags = 0;
     if (no_titlebar)        window_flags |= ImGuiWindowFlags_NoTitleBar;
@@ -415,20 +430,23 @@ void ImGui::ShowDemoWindow(bool* p_open)
     if (no_bring_to_front)  window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
     if (no_docking)         window_flags |= ImGuiWindowFlags_NoDocking;
     if (unsaved_document)   window_flags |= ImGuiWindowFlags_UnsavedDocument;
-    if (no_close)           p_open = NULL; // Don't pass our bool* to Begin
-
-    // We specify a default position/size in case there's no data in the .ini file.
-    // We only do it to make the demo applications a little more welcoming, but typically this isn't required.
-    const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 650, main_viewport->WorkPos.y + 20), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(550, 680), ImGuiCond_FirstUseEver);
+    if (gIsImGuiDemoWindow_no_close)           p_open = NULL; // Don't pass our bool* to Begin
 
     // Main body of the Demo window starts here.
-    if (!ImGui::Begin("Dear ImGui Demo", p_open, window_flags))
+    if (create_window)
     {
-        // Early out if the window is collapsed, as an optimization.
-        ImGui::End();
-        return;
+        // [Bundle] Apply window position/size if provided by caller
+        if (window_size.x > 0 && window_size.y > 0)
+        {
+            ImGui::SetNextWindowPos(window_pos);
+            ImGui::SetNextWindowSize(window_size);
+        }
+        if (!ImGui::Begin("Dear ImGui Demo", p_open, window_flags))
+        {
+            // Early out if the window is collapsed, as an optimization.
+            ImGui::End();
+            return;
+        }
     }
 
     // Most framed widgets share a common width settings. Remaining width is used for the label.
@@ -701,7 +719,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
             ImGui::TableNextColumn(); ImGui::Checkbox("No move", &no_move);
             ImGui::TableNextColumn(); ImGui::Checkbox("No resize", &no_resize);
             ImGui::TableNextColumn(); ImGui::Checkbox("No collapse", &no_collapse);
-            ImGui::TableNextColumn(); ImGui::Checkbox("No close", &no_close);
+            ImGui::TableNextColumn(); ImGui::Checkbox("No close", &gIsImGuiDemoWindow_no_close);
             ImGui::TableNextColumn(); ImGui::Checkbox("No nav", &no_nav);
             ImGui::TableNextColumn(); ImGui::Checkbox("No background", &no_background);
             ImGui::TableNextColumn(); ImGui::Checkbox("No bring to front", &no_bring_to_front);
@@ -720,7 +738,9 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
     // End of ShowDemoWindow()
     ImGui::PopItemWidth();
-    ImGui::End();
+
+    if (create_window)
+        ImGui::End();
 }
 
 //-----------------------------------------------------------------------------
