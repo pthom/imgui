@@ -779,8 +779,16 @@ namespace ImGui
     //   If you get a warning converting a float to ImGuiSliderFlags, read https://github.com/ocornut/imgui/issues/3361
     IMGUI_API bool          SliderFloat(const char* label, float* v, float v_min, float v_max, const char* format = "%.3f", ImGuiSliderFlags flags = 0);     // adjust format to decorate the value with a prefix or a suffix for in-slider labels or unit display.
     IMGUI_API bool          SliderFloat2(const char* label, float v[2], float v_min, float v_max, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API inline std::pair<bool, ImVec2>  SliderFloat2(const char* label, ImVec2 v, float v_min, float v_max, const char* format = "%.3f", ImGuiSliderFlags flags = 0)
+    { bool changed = SliderFloat2(label, (float*)&v, v_min, v_max, format, flags);  return { changed, v }; }
+#endif
     IMGUI_API bool          SliderFloat3(const char* label, float v[3], float v_min, float v_max, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
     IMGUI_API bool          SliderFloat4(const char* label, float v[4], float v_min, float v_max, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API inline std::pair<bool, ImVec4>  SliderFloat4(const char* label, ImVec4 v, float v_min, float v_max, const char* format = "%.3f", ImGuiSliderFlags flags = 0)
+    { bool changed = SliderFloat4(label, (float*)&v, v_min, v_max, format, flags);  return { changed, v }; }
+#endif
     IMGUI_API bool          SliderAngle(const char* label, float* v_rad, float v_degrees_min = -360.0f, float v_degrees_max = +360.0f, const char* format = "%.0f deg", ImGuiSliderFlags flags = 0);
     IMGUI_API bool          SliderInt(const char* label, int* v, int v_min, int v_max, const char* format = "%d", ImGuiSliderFlags flags = 0);
     IMGUI_API bool          SliderInt2(const char* label, int v[2], int v_min, int v_max, const char* format = "%d", ImGuiSliderFlags flags = 0);
@@ -800,8 +808,16 @@ namespace ImGui
     IMGUI_API bool          InputTextWithHint(const char* label, const char* hint, char* buf, size_t buf_size, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
     IMGUI_API bool          InputFloat(const char* label, float* v, float step = 0.0f, float step_fast = 0.0f, const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
     IMGUI_API bool          InputFloat2(const char* label, float v[2], const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API inline std::pair<bool, ImVec2>  InputFloat2(const char* label, ImVec2 v, const char* format = "%.3f", ImGuiInputTextFlags flags = 0)
+        { bool changed = InputFloat2(label, (float*)&v, format, flags);  return { changed, v }; }
+#endif
     IMGUI_API bool          InputFloat3(const char* label, float v[3], const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
     IMGUI_API bool          InputFloat4(const char* label, float v[4], const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API inline std::pair<bool, ImVec4>  InputFloat4(const char* label, ImVec4 v, const char* format = "%.3f", ImGuiInputTextFlags flags = 0)
+        { bool changed = InputFloat4(label, (float*)&v, format, flags);  return { changed, v }; }
+#endif
     IMGUI_API bool          InputInt(const char* label, int* v, int step = 1, int step_fast = 100, ImGuiInputTextFlags flags = 0);
     IMGUI_API bool          InputInt2(const char* label, int v[2], ImGuiInputTextFlags flags = 0);
     IMGUI_API bool          InputInt3(const char* label, int v[3], ImGuiInputTextFlags flags = 0);
@@ -813,13 +829,22 @@ namespace ImGui
     // Widgets: Color Editor/Picker (tip: the ColorEdit* functions have a little color square that can be left-clicked to open a picker, and right-clicked to open an option menu.)
     // - Note that in C++ a 'float v[X]' function argument is the _same_ as 'float* v', the array syntax is just a way to document the number of elements that are expected to be accessible.
     // - You can pass the address of a first float element out of a contiguous structure, e.g. &myvector.x
+
     IMGUI_API bool          ColorEdit3(const char* label, float col[3], ImGuiColorEditFlags flags = 0);
     IMGUI_API bool          ColorEdit4(const char* label, float col[4], ImGuiColorEditFlags flags = 0);
-    IMGUI_API bool          ColorPicker3(const char* label, float col[3], ImGuiColorEditFlags flags = 0);
-#ifdef IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
-    IMGUI_API bool          ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags flags = 0, const float* ref_col = NULL);
-#endif
 #ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API inline std::tuple<bool, ImVec4> ColorEdit4(const std::string& label, ImVec4 col, ImGuiColorEditFlags flags = 0)
+        {  bool changed = ColorEdit4(label.c_str(), (float*)&col, flags);  return { changed, col }; }
+    IMGUI_API inline std::tuple<bool, ImVec4> ColorEdit3(const std::string& label, ImVec4 col, ImGuiColorEditFlags flags = 0)
+        {  bool changed = ColorEdit3(label.c_str(), (float*)&col, flags);  return { changed, col }; }
+#endif
+
+    IMGUI_API bool          ColorPicker3(const char* label, float col[3], ImGuiColorEditFlags flags = 0);
+    IMGUI_API bool          ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags flags = 0, const float* ref_col = NULL);
+
+#ifdef IMGUI_BUNDLE_PYTHON_API
+    IMGUI_API inline std::tuple<bool, ImVec4> ColorPicker3(const char* label, ImVec4 col, ImGuiColorEditFlags flags = 0)
+        { bool changed = ColorPicker3(label, (float*)&col, flags);  return { changed, col }; }
     IMGUI_API std::tuple<bool, ImVec4> ColorPicker4(const std::string& label, ImVec4 col, ImGuiColorEditFlags flags = 0, std::optional<ImVec4> ref_col = std::nullopt);
 #endif
 
