@@ -1096,7 +1096,21 @@ struct ImGui_ImplSDL2_ViewportData
     SDL_GLContext   GLContext;
 
     ImGui_ImplSDL2_ViewportData()   { Window = nullptr; WindowID = 0; WindowOwned = false; GLContext = nullptr; }
-    ~ImGui_ImplSDL2_ViewportData()  { IM_ASSERT(Window == nullptr && GLContext == nullptr); }
+    ~ImGui_ImplSDL2_ViewportData()
+    {
+    #ifndef IMGUI_BUNDLE_BUILD_PYTHON
+        IM_ASSERT(Window == nullptr && GLContext == nullptr);
+    #else
+        // [ImGui Bundle specific]
+        // In Python bindings we can't use IM_ASSERT() because it would raise an exception
+        // See imgui_bundle_cmake/imgui_bundle_config.h
+        // (which is not what we want in a destructor, and would be ignored anyway).
+        // So we print an error instead.
+        bool ok = (Window == nullptr && GLContext == nullptr);
+        if (!ok)
+            fprintf(stderr, "~ImGui_ImplSDL2_ViewportData, error: Window != nullptr or GLContext != nullptr (Window=%p GLContext=%p)\n", (void*)Window, (void*)GLContext);
+    #endif
+    }
 };
 
 static void ImGui_ImplSDL2_CreateWindow(ImGuiViewport* viewport)
