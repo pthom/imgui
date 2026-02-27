@@ -294,7 +294,7 @@ static void ShowDockingDisabledMessage()
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }
 
-// Helper to wire demo markers located in code to an interactive browser (e.g. https://pthom.github.io/imgui_explorer)
+// Helper to wire demo markers located in code to an interactive browser (e.g. imgui_manual)
 #if IMGUI_VERSION_NUM >= 19263
 namespace ImGui { extern IMGUI_API void DemoMarker(const char* file, int line, const char* section); }
 #define IMGUI_DEMO_MARKER(section)  do { ImGui::DemoMarker("imgui_demo.cpp", __LINE__, section); } while (0)
@@ -356,10 +356,10 @@ void ImGui::ShowDemoWindow(bool* p_open)
     ShowDemoWindow_MaybeDocked(true, p_open);
 }
 
-// [Bundle] This is used by imgui_manual to know if the demo window position should be imposed
+// [Bundle] This is used by imgui_explorer to know if the demo window position should be imposed
 bool gIsImGuiDemoWindowUserEdited = true;
 bool gIsImGuiDemoWindow_no_close = false;
-static bool sUseExampleAppDockSpaceImguiManual = false;  // [Bundle] true when called from imgui_manual with constrained positioning
+static bool sUseExampleAppDockSpaceImguiExplorer = false;  // [Bundle] true when called from imgui_explorer with constrained positioning
 
 void ImGui::ShowDemoWindow_MaybeDocked(bool create_window, bool* p_open, ImGuiWindowFlags initial_extra_flags, ImVec2 window_pos, ImVec2 window_size)
 {
@@ -371,7 +371,7 @@ void ImGui::ShowDemoWindow_MaybeDocked(bool create_window, bool* p_open, ImGuiWi
     IMGUI_CHECKVERSION();
 
     // [Bundle] Use simplified DockSpace demo when in manual mode (window_size provided)
-    sUseExampleAppDockSpaceImguiManual = (window_size.x > 0 && window_size.y > 0);
+    sUseExampleAppDockSpaceImguiExplorer = (window_size.x > 0 && window_size.y > 0);
 
     // Stored data
     static ImGuiDemoWindowData demo_data;
@@ -10655,7 +10655,7 @@ struct ImGuiDemoDockspaceArgs
 };
 
 
-static void ShowExampleAppDockSpaceImguiManual(ImGuiDemoDockspaceArgs* args, bool* p_open)
+static void ShowExampleAppDockSpaceImguiExplorer(ImGuiDemoDockspaceArgs* args, bool* p_open)
 {
     ImGuiDockNodeFlags dockspace_flags = args->DockSpaceFlags;
 
@@ -10677,7 +10677,7 @@ static void ShowExampleAppDockSpaceImguiManual(ImGuiDemoDockspaceArgs* args, boo
     {
         IMGUI_DEMO_MARKER("Using Dockspace (Read note below)");
         //
-        // **This example is specific to Dear ImGui Manual**
+        // **This example is specific to Dear ImGui Explorer**
         // (we are here creating a dockspace in a window)
         //
         // Most apps will simply want to allow docking windows on the edge of the screen (viewport)
@@ -10795,8 +10795,8 @@ void ShowExampleAppDockSpace(bool* p_open)
     static bool opt_demo_mode_changed = false;
     static ImGuiDemoDockspaceArgs args;
 
-    if (sUseExampleAppDockSpaceImguiManual)
-        ShowExampleAppDockSpaceImguiManual(&args, p_open);
+    if (sUseExampleAppDockSpaceImguiExplorer)
+        ShowExampleAppDockSpaceImguiExplorer(&args, p_open);
     else
     {
         if (opt_demo_mode == 0)
@@ -10810,7 +10810,7 @@ void ShowExampleAppDockSpace(bool* p_open)
         ImGui::SetNextWindowFocus();
 
     ImGui::Begin("Examples: Dockspace", p_open, ImGuiWindowFlags_MenuBar);
-    if (!sUseExampleAppDockSpaceImguiManual)
+    if (!sUseExampleAppDockSpaceImguiExplorer)
     {
         opt_demo_mode_changed = false;
         opt_demo_mode_changed |= ImGui::RadioButton("Basic demo mode", &opt_demo_mode, 0);
@@ -10818,7 +10818,7 @@ void ShowExampleAppDockSpace(bool* p_open)
         ImGui::SeparatorText("Options");
     }
 
-    if (sUseExampleAppDockSpaceImguiManual)
+    if (sUseExampleAppDockSpaceImguiExplorer)
         opt_demo_mode = 1;
 
     if ((ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DockingEnable) == 0)
@@ -10832,7 +10832,7 @@ void ShowExampleAppDockSpace(bool* p_open)
     }
     else if (opt_demo_mode == 1)
     {
-        if (!sUseExampleAppDockSpaceImguiManual)
+        if (!sUseExampleAppDockSpaceImguiExplorer)
             ImGui::Checkbox("Fullscreen", &args.IsFullscreen);
         ImGui::Checkbox("Keep Window Padding", &args.KeepWindowPadding);
         ImGui::SameLine();
