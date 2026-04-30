@@ -2028,6 +2028,10 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
     return BeginComboPopup(popup_id, bb, flags);
 }
 
+// [ADAPT_IMGUI_BUNDLE] cf https://github.com/thedmd/imgui-node-editor/issues/242 / #310
+bool Priv_ImGuiNodeEditor_IsInCanvas();
+// [/ADAPT_IMGUI_BUNDLE]
+
 bool ImGui::BeginComboPopup(ImGuiID popup_id, const ImRect& bb, ImGuiComboFlags flags)
 {
     ImGuiContext& g = *GImGui;
@@ -2070,12 +2074,29 @@ bool ImGui::BeginComboPopup(ImGuiID popup_id, const ImRect& bb, ImGuiComboFlags 
     if (ImGuiWindow* popup_window = FindWindowByName(name))
         if (popup_window->WasActive)
         {
-            // Always override 'AutoPosLastDirection' to not leave a chance for a past value to affect us.
-            ImVec2 size_expected = CalcWindowNextAutoFitSize(popup_window);
-            popup_window->AutoPosLastDirection = (flags & ImGuiComboFlags_PopupAlignLeft) ? ImGuiDir_Left : ImGuiDir_Down; // Left = "Below, Toward Left", Down = "Below, Toward Right (default)"
-            ImRect r_outer = GetPopupAllowedExtentRect(popup_window);
-            ImVec2 pos = FindBestWindowPosForPopupEx(bb.GetBL(), size_expected, &popup_window->AutoPosLastDirection, r_outer, bb, ImGuiPopupPositionPolicy_ComboBox);
-            SetNextWindowPos(pos);
+            // [ADAPT_IMGUI_BUNDLE] Inside imgui-node-editor canvas, bb is in canvas-local
+            // coords while r_outer (from GetPopupAllowedExtentRect) is in screen coords.
+            // FindBestWindowPosForPopupEx mixes the two via r_outer.Contains(...) and ends
+            // up rejecting every direction when the combo's canvas-local Y goes negative
+            // (e.g. when the node is moved up or the canvas is zoomed out), then falls back
+            // to a clamping path that mixes coordinate spaces and yields a wrong screen
+            // position after the canvas BeginWindow hook translates it. Anchor below the
+            // combo in canvas-local coords and let the hook translate cleanly.
+            if (Priv_ImGuiNodeEditor_IsInCanvas())
+            {
+                popup_window->AutoPosLastDirection = ImGuiDir_Down;
+                SetNextWindowPos(bb.GetBL());
+            }
+            else
+            // [/ADAPT_IMGUI_BUNDLE]
+            {
+                // Always override 'AutoPosLastDirection' to not leave a chance for a past value to affect us.
+                ImVec2 size_expected = CalcWindowNextAutoFitSize(popup_window);
+                popup_window->AutoPosLastDirection = (flags & ImGuiComboFlags_PopupAlignLeft) ? ImGuiDir_Left : ImGuiDir_Down; // Left = "Below, Toward Left", Down = "Below, Toward Right (default)"
+                ImRect r_outer = GetPopupAllowedExtentRect(popup_window);
+                ImVec2 pos = FindBestWindowPosForPopupEx(bb.GetBL(), size_expected, &popup_window->AutoPosLastDirection, r_outer, bb, ImGuiPopupPositionPolicy_ComboBox);
+                SetNextWindowPos(pos);
+            }
         }
 
     // We don't use BeginPopupEx() solely because we have a custom name string, which we could make an argument to BeginPopupEx()
