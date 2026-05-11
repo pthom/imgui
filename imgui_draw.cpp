@@ -1083,9 +1083,9 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
 }
 
 #ifdef IMGUI_BUNDLE_PYTHON_API
-void  ImDrawList::AddPolyline(const std::vector<ImVec2>& points, ImU32 col, ImDrawFlags flags, float thickness)
+void  ImDrawList::AddPolyline(const std::vector<ImVec2>& points, ImU32 col, float thickness, ImDrawFlags flags)
 {
-    AddPolyline(points.data(), (int)points.size(), col, flags, thickness);
+    AddPolyline(points.data(), (int)points.size(), col, thickness, flags);
 }
 void  ImDrawList::AddConvexPolyFilled(const std::vector<ImVec2>& points, ImU32 col)
 {
