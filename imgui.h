@@ -3720,7 +3720,7 @@ struct ImDrawList
 #ifdef IMGUI_BUNDLE_PYTHON_API
     // - Only simple polygons are supported by filling functions (no self-intersections, no holes).
     // - Concave polygon fill is more expensive than convex one: it has O(N^2) complexity. Provided as a convenience fo user but not used by main library.
-    IMGUI_API void  AddPolyline(const std::vector<ImVec2>& points, ImU32 col, ImDrawFlags flags, float thickness);
+    IMGUI_API void  AddPolyline(const std::vector<ImVec2>& points, ImU32 col, float thickness, ImDrawFlags flags);
     IMGUI_API void  AddConvexPolyFilled(const std::vector<ImVec2>& points, ImU32 col);
     IMGUI_API void  AddConcavePolyFilled(const std::vector<ImVec2>& points, ImU32 col);
 #endif
