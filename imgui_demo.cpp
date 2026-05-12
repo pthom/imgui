@@ -5502,7 +5502,7 @@ static void DemoWindowLayout()
                     draw_list->PathLineTo(p);
                     normal = ImVec2(-normal.x, -normal.y);
                 }
-                draw_list->PathStroke(ImColor(255, 255, 255, 190), false, 1.0f);
+                draw_list->PathStroke(ImColor(255, 255, 255, 190), 1.0f, false);
 
                 draw_list->PopClipRect();
             }
