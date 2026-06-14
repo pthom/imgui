@@ -47,13 +47,6 @@ Index of this file:
 // System includes
 #include <stdint.h>     // intptr_t
 
-// [ADAPT_IMGUI_BUNDLE]
-// for InputTextMultiline tooltip within node editor
-#include <string>
-#include <vector>
-#include <sstream>
-// [/ADAPT_IMGUI_BUNDLE]
-
 //-------------------------------------------------------------------------
 // Warnings
 //-------------------------------------------------------------------------
@@ -4053,152 +4046,135 @@ bool Priv_ImGuiNodeEditor_IsInCanvas();
 
 bool ImGui::InputTextMultiline(const char* label, char* buf, size_t buf_size, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 {
-    // [ADAPT_IMGUI_BUNDLE] cf
-    // When inside imgui-node-editor canvas, we cannot open child windows
-    // In this case, we present a one line version of the input text,
-    // and offer the possibility to open a popup to edit the text in a multiline widget
+    // [ADAPT_IMGUI_BUNDLE] cf https://github.com/thedmd/imgui-node-editor/issues/242
+    // When inside the imgui-node-editor canvas, we cannot open the child window that
+    // InputTextMultiline uses internally. Instead, we render a read-only preview box at the
+    // exact requested size (same look & size as the real widget), and open a resizable popup
+    // hosting the real editor when the box is clicked.
     if (Priv_ImGuiNodeEditor_IsInCanvas())
     {
-        // Helper function to split and format the text for a tooltip
-        // to show an extract of the full text when hovering the button,
-        auto fn_format_tooltip = [](
-            const char* text, size_t max_line_length, size_t max_lines) -> std::string
-        {
-            auto fn_cut_string_after_max_length = [](const std::string& text, size_t max_length) -> std::string
-            {
-                if (text.size() <= max_length)
-                    return text;
-                std::string r = text.substr(0, max_length - 3) + "...";
-                return r;
-            };
-            auto fn_split_lines = [](const std::string& s) -> std::vector<std::string>
-            {
-                std::vector<std::string> lines;
-                std::istringstream f(s);
-                std::string line;
-                while (std::getline(f, line))
-                    lines.push_back(line);
-                return lines;
-            };
-            std::string r = "";
-            auto lines = fn_split_lines(text);
-            size_t n = 0;
-            for (const auto& line : lines)
-            {
-                if (n >= max_lines)
-                {
-                    r += "...\n";
-                    break;
-                }
-                r += fn_cut_string_after_max_length(line, max_line_length) + "\n";
-                n++;
-            }
-            return r;
-        };
+        ImGuiWindow* window = GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
 
-        // Helper function to make the text color more red
-        auto fn_redify_color = [](const ImVec4& color) -> ImVec4
-        {
-            ImVec4 redified_color;
-            redified_color.x = color.x;
-            redified_color.y = 0.6f * color.y;
-            redified_color.z = 0.6f * color.z;
-            redified_color.w = color.w;
-            return redified_color;
-        };
+        ImGuiContext& g = *GImGui;
+        ImGuiStyle& style = g.Style;
 
-        // Intro
         PushID(label); // make sure to use unique ids
-        bool changed = false;
-        ImGui::BeginGroup();
+        const ImGuiID box_id = window->GetID("##ml_box");
 
-        // A- One line version text, without the label
-        ImGuiStyle& style = ImGui::GetStyle();
-        ImVec2 pos = ImGui::GetCursorScreenPos();
+        // Resolve the size exactly like the real multiline widget (default = 8 lines high),
+        // honoring SetNextItemWidth() through CalcItemWidth().
+        const ImVec2 label_size = CalcTextSize(label, NULL, true);
+        const float default_h = g.FontSize * 8.0f + style.FramePadding.y * 2.0f;
+        const ImVec2 frame_size = CalcItemSize(size, CalcItemWidth(), default_h);
 
-        float one_line_widget_width = size.x > 0.f ? size.x : CalcItemWidth();
+        const ImVec2 frame_min = window->DC.CursorPos;
+        const ImRect frame_bb(frame_min, frame_min + frame_size);
+        const ImRect total_bb(frame_min, frame_bb.Max + ImVec2(label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f, 0.0f));
+
+        ItemSize(total_bb, style.FramePadding.y);
+        if (!ItemAdd(total_bb, box_id, &frame_bb))
         {
-            // The one line widget will use a width passed by ImGui::SetNextItemWidth(), if any
-            float nextItemDataWidth = -1.f;
+            PopID();
+            return false;
+        }
+
+        // Interaction: behave like any widget. ButtonBehavior takes ActiveId on press, so a drag
+        // started on the box does NOT move the node (you grab the node body/title instead).
+        bool hovered;
+        bool pressed = ButtonBehavior(frame_bb, box_id, &hovered, NULL);
+        if (hovered)
+            SetMouseCursor(ImGuiMouseCursor_TextInput);
+        // Open the popup on a click, but not when the press turned into a drag (e.g. dragging an
+        // external resize grip placed over the box) - otherwise the editor would pop open on resize.
+        if (pressed && !IsMouseDragPastThreshold(0))
+            OpenPopup("##ml_edit");
+
+        // The popup being open means "edited elsewhere": keep the box highlighted and fade its
+        // text, so the link between the box and the popup stays obvious.
+        const bool editing = IsPopupOpen("##ml_edit");
+        const bool highlight = hovered || editing;
+
+        // Frame background + border. On highlight, blend FrameBg -> FrameBgHovered (theme-aware, subtle).
+        const ImU32 frame_col = highlight
+            ? GetColorU32(ImLerp(style.Colors[ImGuiCol_FrameBg], style.Colors[ImGuiCol_FrameBgHovered], 0.25f))
+            : GetColorU32(ImGuiCol_FrameBg);
+        RenderNavCursor(frame_bb, box_id);
+        RenderFrame(frame_bb.Min, frame_bb.Max, frame_col, true, style.FrameRounding);
+
+        // Draw the text, clipped to the inner area (no word-wrap, like the real widget).
+        const ImRect inner_bb(frame_bb.Min + style.FramePadding, frame_bb.Max - style.FramePadding);
+        const float line_h = g.FontSize;
+        const ImU32 text_col = GetColorU32(ImGuiCol_Text, editing ? 0.5f : 1.0f);
+        const char* text_end = buf + strlen(buf);
+        window->DrawList->PushClipRect(inner_bb.Min, inner_bb.Max, true);
+        {
+            const char* s = buf;
+            ImVec2 pos = inner_bb.Min;
+            int n_lines = 0;
+            bool horiz_overflow = false;
+            while (s <= text_end)
             {
-                ImGuiContext& g = *GImGui;
-                ImGuiWindow* window = g.CurrentWindow;
-                if (g.NextItemData.HasFlags & ImGuiNextItemDataFlags_HasWidth)
-                    nextItemDataWidth = g.NextItemData.Width;
+                const char* line_end = strchr(s, '\n');
+                if (line_end == NULL)
+                    line_end = text_end;
+                if (pos.y > inner_bb.Max.y) // stop drawing once below the visible area
+                    { n_lines++; break; }
+                window->DrawList->AddText(pos, text_col, s, line_end);
+                if (CalcTextSize(s, line_end).x > inner_bb.GetWidth())
+                    horiz_overflow = true;
+                pos.y += line_h;
+                n_lines++;
+                if (line_end == text_end)
+                    break;
+                s = line_end + 1;
             }
-            if (nextItemDataWidth > 0.f)
-                one_line_widget_width = nextItemDataWidth;
+
+            // Overflow hints: fade the box fill back in along each clipped edge.
+            const ImU32 c_transp = frame_col & ~IM_COL32_A_MASK;
+            if ((float)n_lines * line_h > inner_bb.GetHeight() + 1.0f)
+            {
+                const float fade_h = ImMin(line_h, inner_bb.GetHeight());
+                window->DrawList->AddRectFilledMultiColor(
+                    ImVec2(frame_bb.Min.x, frame_bb.Max.y - fade_h), frame_bb.Max,
+                    c_transp, c_transp, frame_col, frame_col);
+            }
+            if (horiz_overflow)
+            {
+                const float fade_w = ImMin(line_h * 1.5f, inner_bb.GetWidth());
+                window->DrawList->AddRectFilledMultiColor(
+                    ImVec2(frame_bb.Max.x - fade_w, frame_bb.Min.y), frame_bb.Max,
+                    c_transp, frame_col, frame_col, c_transp);
+            }
+        }
+        window->DrawList->PopClipRect();
+
+        // Label, to the right of the frame (rendered up to "##", like the real widget).
+        if (label_size.x > 0.0f)
+        {
+            const char* label_end = FindRenderedTextEnd(label);
+            RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label, label_end);
         }
 
-        float btn_additional_width = CalcTextSize("...").x + style.FramePadding.x * 2.0f;// + style.ItemInnerSpacing.x;
-        one_line_widget_width -= btn_additional_width;
-
-        ImGui::SetNextItemWidth(one_line_widget_width);
-        // A.1 make it editable if text does not contain \n
-        char* newline_pos = strchr(buf, '\n');
-        bool contains_newline = newline_pos != NULL;
-        if (!contains_newline)
+        // Popup with the real editor. The popup is outside the canvas, so its child window works
+        // (iff the node-editor popup patches are applied:
+        //  https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-1681806764
+        //  https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-2404714757 ).
+        // We use BeginPopupEx (not BeginPopup, which forces AlwaysAutoResize) so the popup is
+        // resizable: it opens at the requested size, then keeps its own resized size across reopens.
+        // Resizing the popup does NOT change the read-only preview box.
+        // There is no infinite recursion: inside the popup we are no longer in the canvas.
+        bool changed = false;
+        const ImGuiID popup_id = GetID("##ml_edit");
+        SetNextWindowSize(frame_size + style.WindowPadding * 2.0f, ImGuiCond_FirstUseEver);
+        if (BeginPopupEx(popup_id, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings))
         {
-            if (InputText("##hidden_label", buf, buf_size, flags, callback, user_data))
-                changed = true;
-        }
-        else
-        // A.2 Show it read-only if text contains \n
-        {
-            flags &= ~ImGuiInputTextFlags_ReadOnly;
-            *newline_pos = '\0';
-            InputText("##hidden_label", buf, buf_size, flags | ImGuiInputTextFlags_ReadOnly, callback, user_data);
-            *newline_pos = '\n';
-            if (IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                ImGui::SetTooltip("Click the button to edit all lines");
-        }
-
-        // B- Add a button to open a popup to edit the text
-        //   i. First, move the cursor to the left, so that the button appears right next to the input text
-        //ImVec2 pos = ImGui::GetCursorScreenPos();
-        //pos.x = pos.x - style.ItemSpacing.x; // + style.ItemInnerSpacing.x;
-        pos.x += one_line_widget_width - 1.f;
-        ImGui::SetCursorScreenPos(pos);
-        //   ii. Then add the button
-        bool shall_display_tooltip = strchr(buf, '\n') != NULL;
-        if (shall_display_tooltip)
-        {
-            ImVec4 color = ImGui::GetStyleColorVec4(ImGuiCol_Text);
-            ImGui::PushStyleColor(ImGuiCol_Text, fn_redify_color(color));
-        }
-        bool was_button_pressed = false;
-        if (Button("..."))
-        {
-            was_button_pressed = true;
-            OpenPopup("InputTextMultilinePopup");
-        }
-        if (shall_display_tooltip)
-            ImGui::PopStyleColor();
-
-        if (shall_display_tooltip && ! was_button_pressed)
-            ImGui::SetItemTooltip("%s", fn_format_tooltip(buf, 60, 3).c_str());
-
-        // C. Finally, add the label (up until "##")
-        const char* label_end = FindRenderedTextEnd(label);
-        pos.x += style.ItemInnerSpacing.x + btn_additional_width;
-        ImGui::SetCursorScreenPos(pos);
-        TextUnformatted(label, label_end);
-
-        ImGui::EndGroup();
-
-        // D. Handle the popup
-        if (ImGui::BeginPopup("InputTextMultilinePopup"))
-        {
-            // Note: there is no infinite recursion here, since we are not inside the canvas anymore
-            // (as soon as BeginPopup return true, we are outside the canvas)
-            // (iif the patches https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-1681806764
-            //  and https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-2404714757 are applied)
-            ImVec2 size_multiline = size;
-            // size_multiline.x = one_line_widget_width;
-            if (InputTextMultiline("##edit", buf, buf_size, size_multiline, flags, callback, user_data))
+            if (InputTextMultiline("##edit", buf, buf_size, GetContentRegionAvail(), flags, callback, user_data))
                 changed = true;
             EndPopup();
         }
+
         PopID();
         return changed;
     }
