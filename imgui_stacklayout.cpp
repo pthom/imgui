@@ -130,8 +130,6 @@ struct ImGuiLayout
     ImVec2                      StartPos;           // Initial cursor position when BeginLayout is called.
     ImVec2                      StartCursorMaxPos;  // Maximum cursor position when BeginLayout is called.
 
-    ImDrawListSplitter          Splitter;
-
     ImGuiLayout(ImGuiID id, ImGuiLayoutType type)
     {
         Id = id;
@@ -228,7 +226,6 @@ static bool             HasAnyNonZeroSpring(ImGuiLayout& layout);
 static void             BalanceChildLayouts(ImGuiLayout& layout);
 static void             BeginLayoutClipRect(ImGuiLayout& layout);
 static void             EndLayoutClipRect(ImGuiLayout& layout);
-static void             ApplyLayoutClipRect(ImGuiLayout& layout);
 static ImGuiLayoutItem* GenerateLayoutItem(ImGuiLayout& layout, ImGuiLayoutItemType type);
 static float            CalculateLayoutItemAlignmentOffset(ImGuiLayout& layout, ImGuiLayoutItem& item);
 static void             TranslateLayoutItem(ImGuiLayoutItem& item, const ImVec2& offset);
@@ -839,57 +836,32 @@ static void ImGui::BalanceChildLayouts(ImGuiLayout& layout)
     BalanceLayoutItemsAlignment(layout);
 }
 
+// [Bundle] A layout clips its content on the axes where its size is FIXED, and only there.
+// On a fixed axis the bounds are known when the layout begins, so a plain clip rect is enough. An auto-sized axis is not
+// clipped: its measured size is tight around the items, and clipping to it would cut legitimate overdraw (selection
+// highlights, the keyboard navigation rectangle, decorations drawn by the user). No draw list splitter is needed any more.
+static bool LayoutClipsItsContent(const ImGuiLayout& layout)
+{
+    return layout.Size.x > 0.0f || layout.Size.y > 0.0f;
+}
+
 static void ImGui::BeginLayoutClipRect(ImGuiLayout& layout)
 {
-    ImGuiWindow* window = GetCurrentWindow();
+    if (!LayoutClipsItsContent(layout))
+        return;
 
-    // Use splitter to collect draw commands in separate channel,
-    // so we can clip them to the layout bounds.
-    layout.Splitter.Split(window->DrawList, 2);
-    layout.Splitter.SetCurrentChannel(window->DrawList, 1);
-
-    // Clip to layout bounds, unrestricted and not measured bounds span
-    // all the way to the edge of the window.
-    ImVec2 clip_rect_min = layout.StartPos;
-    ImVec2 clip_rect_max;
-    clip_rect_max.x = layout.Size.x > 0.0f ? layout.StartPos.x + layout.Size.x : FLT_MAX;
-    clip_rect_max.y = layout.Size.y > 0.0f ? layout.StartPos.y + layout.Size.y : FLT_MAX;
+    ImVec2 clip_rect_min(-FLT_MAX, -FLT_MAX);
+    ImVec2 clip_rect_max(FLT_MAX, FLT_MAX);
+    if (layout.Size.x > 0.0f) { clip_rect_min.x = layout.StartPos.x; clip_rect_max.x = layout.StartPos.x + layout.Size.x; }
+    if (layout.Size.y > 0.0f) { clip_rect_min.y = layout.StartPos.y; clip_rect_max.y = layout.StartPos.y + layout.Size.y; }
 
     PushClipRect(clip_rect_min, clip_rect_max, true);
 }
 
 static void ImGui::EndLayoutClipRect(ImGuiLayout& layout)
 {
-    PopClipRect();
-
-    // Layout bounds are final at this point: clamp recorded commands
-    // and merge them right away.
-    ApplyLayoutClipRect(layout);
-
-    layout.Splitter.Merge(GetCurrentWindow()->DrawList);
-}
-
-static void ImGui::ApplyLayoutClipRect(ImGuiLayout& layout)
-{
-    ImGuiWindow* window = GetCurrentWindow();
-
-    ImVec4 current_clip_rect;
-    current_clip_rect.x = layout.StartPos.x;
-    current_clip_rect.y = layout.StartPos.y;
-    current_clip_rect.z = layout.StartPos.x + layout.MeasuredSize.x;
-    current_clip_rect.w = layout.StartPos.y + layout.MeasuredSize.y;
-
-    layout.Splitter.SetCurrentChannel(window->DrawList, 0);
-    for (ImDrawCmd& cmd : layout.Splitter._Channels[1]._CmdBuffer)
-    {
-
-        if (cmd.ClipRect.x < current_clip_rect.x) cmd.ClipRect.x = current_clip_rect.x;
-        if (cmd.ClipRect.y < current_clip_rect.y) cmd.ClipRect.y = current_clip_rect.y;
-        if (cmd.ClipRect.z > current_clip_rect.z) cmd.ClipRect.z = current_clip_rect.z;
-        if (cmd.ClipRect.w > current_clip_rect.w) cmd.ClipRect.w = current_clip_rect.w;
-    }
-
-    //GetForegroundDrawList()->AddRect(layout.StartPos, layout.StartPos + layout.MeasuredSize, IM_COL32(255,0,0,128)); // [DEBUG]
+    if (LayoutClipsItsContent(layout))
+        PopClipRect();
 }
 
 static ImGuiLayoutItem* ImGui::GenerateLayoutItem(ImGuiLayout& layout, ImGuiLayoutItemType type)
