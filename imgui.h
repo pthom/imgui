@@ -37,8 +37,21 @@
 #define IMGUI_HAS_DOCK              // In 'docking' WIP branch.
 #define IMGUI_HAS_STACK_LAYOUT      // Stack-Layout PR #846
 
-/*
 
+//
+// Adaptations for ImGui Bundle are noted with [ADAPT_IMGUI_BUNDLE]
+//
+// [ADAPT_IMGUI_BUNDLE]
+#ifdef IMGUI_BUNDLE_PYTHON_API
+#include <functional>   // ImGuiInputTextCallback and ImGuiSizeCallback are std::function in the Python build
+#endif
+// IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API is always defined (even when building python bindings),
+// but is used as a marker to exclude certain functions from the python binding code.
+#define IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
+
+// [/ADAPT_IMGUI_BUNDLE]
+
+/*
 Index of this file:
 // [SECTION] Header mess
 // [SECTION] Forward declarations and basic types
@@ -299,8 +312,15 @@ typedef ImWchar16 ImWchar;
 typedef ImS64 ImGuiSelectionUserData;
 
 // Callback and functions types
+#ifdef IMGUI_BUNDLE_PYTHON_API
+using ImGuiInputTextCallback = std::function<int(ImGuiInputTextCallbackData*)>;  // Callback function for ImGui::InputText()
+using ImGuiSizeCallback = std::function<void(ImGuiSizeCallbackData*)>;           // Callback function for ImGui::SetNextWindowSizeConstraints()
+#else
+#ifdef IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
 typedef int     (*ImGuiInputTextCallback)(ImGuiInputTextCallbackData* data);    // Callback function for ImGui::InputText()
 typedef void    (*ImGuiSizeCallback)(ImGuiSizeCallbackData* data);              // Callback function for ImGui::SetNextWindowSizeConstraints()
+#endif
+#endif
 typedef void*   (*ImGuiMemAllocFunc)(size_t sz, void* user_data);               // Function signature for ImGui::SetAllocatorFunctions()
 typedef void    (*ImGuiMemFreeFunc)(void* ptr, void* user_data);                // Function signature for ImGui::SetAllocatorFunctions()
 
@@ -4224,7 +4244,10 @@ struct ImGuiViewport
     bool                PlatformRequestClose;   // Platform window requested closure (e.g. window was moved by the OS / host window manager, e.g. pressing ALT-F4)
 
     ImGuiViewport()     { memset((void*)this, 0, sizeof(*this)); }
-    ~ImGuiViewport()    { IM_ASSERT(PlatformUserData == NULL && RendererUserData == NULL); }
+    // [ADAPT_IMGUI_BUNDLE]
+    ~ImGuiViewport() noexcept(false)   { IM_ASSERT(PlatformUserData == NULL && RendererUserData == NULL); }
+    // [/ADAPT_IMGUI_BUNDLE]
+
 
     // Helpers
     ImVec2              GetCenter() const       { return ImVec2(Pos.x + Size.x * 0.5f, Pos.y + Size.y * 0.5f); }
