@@ -8001,6 +8001,11 @@ static void SetWindowActiveForSkipRefresh(ImGuiWindow* window)
 bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
 {
     ImGuiContext& g = *GImGui;
+
+    // [ADAPT_IMGUI_BUNDLE]: see ImGuiContext::BeginWindowCallback
+    if (g.BeginWindowCallback != NULL)
+        g.BeginWindowCallback(&g, g.BeginEndWindowCallbackUserData);
+
     const ImGuiStyle& style = g.Style;
     IM_ASSERT(name != NULL && name[0] != '\0');     // Window name required
     IM_ASSERT(g.WithinFrameScope);                  // Forgot to call ImGui::NewFrame()
@@ -9044,6 +9049,10 @@ void ImGui::End()
     SetCurrentWindow(g.CurrentWindowStack.Size == 0 ? NULL : g.CurrentWindowStack.back().Window);
     if (g.CurrentWindow)
         SetCurrentViewport(g.CurrentWindow, g.CurrentWindow->Viewport);
+
+    // [ADAPT_IMGUI_BUNDLE]: see ImGuiContext::EndWindowCallback
+    if (g.EndWindowCallback != NULL)
+        g.EndWindowCallback(&g, g.BeginEndWindowCallbackUserData);
 }
 
 void ImGui::PushItemFlag(ImGuiItemFlags option, bool enabled)
