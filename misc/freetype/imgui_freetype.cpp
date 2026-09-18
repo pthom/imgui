@@ -59,7 +59,7 @@
 #include <lunasvg.h>
 #endif
 #ifdef  IMGUI_ENABLE_FREETYPE_PLUTOSVG
-#include <plutosvg.h>
+#include <plutosvg-ft.h>
 #endif
 #if defined(IMGUI_ENABLE_FREETYPE_LUNASVG) || defined (IMGUI_ENABLE_FREETYPE_PLUTOSVG)
 #if !((FREETYPE_MAJOR >= 2) && (FREETYPE_MINOR >= 12))
