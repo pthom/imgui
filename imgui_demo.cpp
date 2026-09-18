@@ -299,7 +299,7 @@ static void ShowDockingDisabledMessage()
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }
 
-// Helper to wire demo markers located in code to an interactive browser (e.g. https://pthom.github.io/imgui_explorer)
+// Helper to wire demo markers located in code to an interactive browser (e.g. imgui_manual)
 #if IMGUI_VERSION_NUM >= 19263
 namespace ImGui { extern IMGUI_API void DemoMarker(const char* file, int line, const char* section); }
 #define IMGUI_DEMO_MARKER(section)  do { ImGui::DemoMarker("imgui_demo.cpp", __LINE__, section); } while (0)
@@ -358,12 +358,28 @@ struct ImGuiDemoWindowData
 // You may then search for keywords in the code when you are interested by a specific feature.
 void ImGui::ShowDemoWindow(bool* p_open)
 {
+    const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 650, main_viewport->WorkPos.y + 20), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(550, 680), ImGuiCond_FirstUseEver);
+    ShowDemoWindow_MaybeDocked(true, p_open);
+}
+
+// [Bundle] This is used by imgui_explorer to know if the demo window position should be imposed
+bool gIsImGuiDemoWindowUserEdited = true;
+bool gIsImGuiDemoWindow_no_close = false;
+static bool sUseExampleAppDockSpaceImguiExplorer = false;  // [Bundle] true when called from imgui_explorer with constrained positioning
+
+void ImGui::ShowDemoWindow_MaybeDocked(bool create_window, bool* p_open, ImGuiWindowFlags initial_extra_flags, ImVec2 window_pos, ImVec2 window_size)
+{
     // Exceptionally add an extra assert here for people confused about initial Dear ImGui setup
     // Most functions would normally just assert/crash if the context is missing.
     IM_ASSERT(ImGui::GetCurrentContext() != NULL && "Missing Dear ImGui context. Refer to examples app!");
 
     // Verify ABI compatibility between caller code and compiled version of Dear ImGui. This helps detects some build issues.
     IMGUI_CHECKVERSION();
+
+    // [Bundle] Use simplified DockSpace demo when in manual mode (window_size provided)
+    sUseExampleAppDockSpaceImguiExplorer = (window_size.x > 0 && window_size.y > 0);
 
     // Stored data
     static ImGuiDemoWindowData demo_data;
@@ -402,15 +418,18 @@ void ImGui::ShowDemoWindow(bool* p_open)
     static bool no_titlebar = false;
     static bool no_scrollbar = false;
     static bool no_menu = false;
-    static bool no_move = false;
-    static bool no_resize = false;
+    static bool no_move = (initial_extra_flags & ImGuiWindowFlags_NoMove) != 0;
+    static bool no_resize = (initial_extra_flags & ImGuiWindowFlags_NoResize) != 0;
     static bool no_collapse = false;
-    static bool no_close = false;
+    //static bool no_close = false;
     static bool no_nav = false;
     static bool no_background = false;
     static bool no_bring_to_front = false;
     static bool no_docking = false;
     static bool unsaved_document = false;
+
+    // [Bundle]
+    gIsImGuiDemoWindowUserEdited = (!no_move) || (!no_resize);
 
     ImGuiWindowFlags window_flags = 0;
     if (no_titlebar)        window_flags |= ImGuiWindowFlags_NoTitleBar;
@@ -424,20 +443,23 @@ void ImGui::ShowDemoWindow(bool* p_open)
     if (no_bring_to_front)  window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
     if (no_docking)         window_flags |= ImGuiWindowFlags_NoDocking;
     if (unsaved_document)   window_flags |= ImGuiWindowFlags_UnsavedDocument;
-    if (no_close)           p_open = NULL; // Don't pass our bool* to Begin
-
-    // We specify a default position/size in case there's no data in the .ini file.
-    // We only do it to make the demo applications a little more welcoming, but typically this isn't required.
-    const ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(ImVec2(main_viewport->WorkPos.x + 650, main_viewport->WorkPos.y + 20), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(550, 680), ImGuiCond_FirstUseEver);
+    if (gIsImGuiDemoWindow_no_close)           p_open = NULL; // Don't pass our bool* to Begin
 
     // Main body of the Demo window starts here.
-    if (!ImGui::Begin("Dear ImGui Demo", p_open, window_flags))
+    if (create_window)
     {
-        // Early out if the window is collapsed, as an optimization.
-        ImGui::End();
-        return;
+        // [Bundle] Apply window position/size if provided by caller
+        if (window_size.x > 0 && window_size.y > 0)
+        {
+            ImGui::SetNextWindowPos(window_pos);
+            ImGui::SetNextWindowSize(window_size);
+        }
+        if (!ImGui::Begin("Dear ImGui Demo", p_open, window_flags))
+        {
+            // Early out if the window is collapsed, as an optimization.
+            ImGui::End();
+            return;
+        }
     }
 
     // Most framed widgets share a common width settings. Remaining width is used for the label.
@@ -713,7 +735,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
             ImGui::TableNextColumn(); ImGui::Checkbox("No move", &no_move);
             ImGui::TableNextColumn(); ImGui::Checkbox("No resize", &no_resize);
             ImGui::TableNextColumn(); ImGui::Checkbox("No collapse", &no_collapse);
-            ImGui::TableNextColumn(); ImGui::Checkbox("No close", &no_close);
+            ImGui::TableNextColumn(); ImGui::Checkbox("No close", &gIsImGuiDemoWindow_no_close);
             ImGui::TableNextColumn(); ImGui::Checkbox("No nav", &no_nav);
             ImGui::TableNextColumn(); ImGui::Checkbox("No background", &no_background);
             ImGui::TableNextColumn(); ImGui::Checkbox("No bring to front", &no_bring_to_front);
@@ -732,7 +754,9 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
     // End of ShowDemoWindow()
     ImGui::PopItemWidth();
-    ImGui::End();
+
+    if (create_window)
+        ImGui::End();
 }
 
 //-----------------------------------------------------------------------------
@@ -10898,6 +10922,65 @@ struct ImGuiDemoDockspaceArgs
     ImGuiDockNodeFlags  DockSpaceFlags  = ImGuiDockNodeFlags_None;
 };
 
+
+static void ShowExampleAppDockSpaceImguiExplorer(ImGuiDemoDockspaceArgs* args, bool* p_open)
+{
+    ImGuiDockNodeFlags dockspace_flags = args->DockSpaceFlags;
+
+    // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
+    // because it would be confusing to have two docking targets within each others.
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
+    {
+        // Floating dockspace
+        dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
+    }
+
+    // Important: note that we proceed even if Begin() returns false (aka window is collapsed).
+    // This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
+    // all active windows docked into it will lose their parent and become undocked.
+    // We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
+    // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
+    ImGui::SetNextWindowSize(ImVec2(400, 600), ImGuiCond_Once);
+    ImGui::Begin("Window with a DockSpace", p_open, window_flags);
+    {
+        IMGUI_DEMO_MARKER("Using Dockspace (Read note below)");
+        //
+        // **This example is specific to Dear ImGui Explorer**
+        // (we are here creating a dockspace in a window)
+        //
+        // Most apps will simply want to allow docking windows on the edge of the screen (viewport)
+        // For this, choose between:
+        //    // Create a dockspace in main viewport
+        //    ImGui::DockSpaceOverViewport(); // call this just after ImGui::NewFrame()
+        // And:
+        //    // Create a dockspace in main viewport, where central node is transparent.
+        //    ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode); // call this just after ImGui::NewFrame()
+        //
+        // (See ShowExampleAppDockSpaceBasic())
+
+    }
+
+    // Submit the DockSpace widget inside our window
+    // - Note that the id here is different from the one used by DockSpaceOverViewport(), so docking state won't get transfered between "Basic" and "Advanced" demos.
+    // - If we made the ShowExampleAppDockSpaceBasic() calculate its own ID and pass it to DockSpaceOverViewport() the ID could easily match.
+    ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+    ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+
+    ImGui::End();
+
+    // Create 5 windows for the user to play with docking
+    for (int i = 0; i < 3; ++i)
+    {
+        char window_name[100];
+        snprintf(window_name, 100, "Dockable window #%i", i + 1);
+        ImVec2 pos(100, 100 + i * 50);
+        ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
+        ImGui::Begin(window_name);
+        ImGui::Text("Hello from %s", window_name);
+        ImGui::End();
+    }
+}
+
 // THIS IS A DEMO FOR ADVANCED USAGE OF DockSpace().
 // MOST REGULAR APPLICATIONS WANTING TO ALLOW DOCKING WINDOWS ON THE EDGE OF YOUR SCREEN CAN SIMPLY USE:
 //    ImGui::NewFrame(); + ImGui::DockSpaceOverViewport();                                                   // Create a dockspace in main viewport
@@ -10980,20 +11063,31 @@ void ShowExampleAppDockSpace(bool* p_open)
     static bool opt_demo_mode_changed = false;
     static ImGuiDemoDockspaceArgs args;
 
-    if (opt_demo_mode == 0)
-        ShowExampleAppDockSpaceBasic(args.DockSpaceFlags);
+    if (sUseExampleAppDockSpaceImguiExplorer)
+        ShowExampleAppDockSpaceImguiExplorer(&args, p_open);
     else
-        ShowExampleAppDockSpaceAdvanced(&args, p_open);
+    {
+        if (opt_demo_mode == 0)
+            ShowExampleAppDockSpaceBasic(args.DockSpaceFlags);
+        else
+            ShowExampleAppDockSpaceAdvanced(&args, p_open);
+    }
 
     // Refocus our window to minimize perceived loss of focus when changing mode (caused by the fact that each use a different window, which would not happen in a real app)
     if (opt_demo_mode_changed)
         ImGui::SetNextWindowFocus();
-    ImGui::Begin("Examples: Dockspace", p_open, ImGuiWindowFlags_MenuBar);
-    opt_demo_mode_changed = false;
-    opt_demo_mode_changed |= ImGui::RadioButton("Basic demo mode", &opt_demo_mode, 0);
-    opt_demo_mode_changed |= ImGui::RadioButton("Advanced demo mode", &opt_demo_mode, 1);
 
-    ImGui::SeparatorText("Options");
+    ImGui::Begin("Examples: Dockspace", p_open, ImGuiWindowFlags_MenuBar);
+    if (!sUseExampleAppDockSpaceImguiExplorer)
+    {
+        opt_demo_mode_changed = false;
+        opt_demo_mode_changed |= ImGui::RadioButton("Basic demo mode", &opt_demo_mode, 0);
+        opt_demo_mode_changed |= ImGui::RadioButton("Advanced demo mode", &opt_demo_mode, 1);
+        ImGui::SeparatorText("Options");
+    }
+
+    if (sUseExampleAppDockSpaceImguiExplorer)
+        opt_demo_mode = 1;
 
     if ((ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DockingEnable) == 0)
     {
@@ -11006,7 +11100,8 @@ void ShowExampleAppDockSpace(bool* p_open)
     }
     else if (opt_demo_mode == 1)
     {
-        ImGui::Checkbox("Fullscreen", &args.IsFullscreen);
+        if (!sUseExampleAppDockSpaceImguiExplorer)
+            ImGui::Checkbox("Fullscreen", &args.IsFullscreen);
         ImGui::Checkbox("Keep Window Padding", &args.KeepWindowPadding);
         ImGui::SameLine();
         HelpMarker("This is mostly exposed to facilitate understanding that a DockSpace() is _inside_ a window.");
