@@ -4087,6 +4087,10 @@ bool ImGui::InputText(const char* label, char* buf, size_t buf_size, ImGuiInputT
 
 bool ImGui::InputTextMultiline(const char* label, char* buf, size_t buf_size, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 {
+    // [ADAPT_IMGUI_BUNDLE]: see ImGuiContext::InputTextMultilineOverride
+    if (GImGui->InputTextMultilineOverride != NULL)
+        return GImGui->InputTextMultilineOverride(label, buf, buf_size, size, flags, callback, user_data);
+    // [/ADAPT_IMGUI_BUNDLE]
     return InputTextEx(label, NULL, buf, (int)buf_size, size, flags | ImGuiInputTextFlags_Multiline, callback, user_data);
 }
 
