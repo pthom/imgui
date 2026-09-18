@@ -2021,6 +2021,10 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
     return BeginComboPopup(popup_id, bb, flags);
 }
 
+// [ADAPT_IMGUI_BUNDLE] cf https://github.com/thedmd/imgui-node-editor/issues/242 / #310
+bool Priv_ImGuiNodeEditor_IsInCanvas();
+// [/ADAPT_IMGUI_BUNDLE]
+
 bool ImGui::BeginComboPopup(ImGuiID popup_id, const ImRect& bb, ImGuiComboFlags flags)
 {
     ImGuiContext& g = *GImGui;
@@ -2063,12 +2067,29 @@ bool ImGui::BeginComboPopup(ImGuiID popup_id, const ImRect& bb, ImGuiComboFlags 
     if (ImGuiWindow* popup_window = FindWindowByName(name))
         if (popup_window->WasActive)
         {
-            // Always override 'AutoPosLastDirection' to not leave a chance for a past value to affect us.
-            ImVec2 size_expected = CalcWindowNextAutoFitSize(popup_window);
-            popup_window->AutoPosLastDirection = (flags & ImGuiComboFlags_PopupAlignLeft) ? ImGuiDir_Left : ImGuiDir_Down; // Left = "Below, Toward Left", Down = "Below, Toward Right (default)"
-            ImRect r_outer = GetPopupAllowedExtentRect(popup_window);
-            ImVec2 pos = FindBestWindowPosForPopupEx(bb.GetBL(), size_expected, &popup_window->AutoPosLastDirection, r_outer, bb, ImGuiPopupPositionPolicy_ComboBox);
-            SetNextWindowPos(pos);
+            // [ADAPT_IMGUI_BUNDLE] Inside imgui-node-editor canvas, bb is in canvas-local
+            // coords while r_outer (from GetPopupAllowedExtentRect) is in screen coords.
+            // FindBestWindowPosForPopupEx mixes the two via r_outer.Contains(...) and ends
+            // up rejecting every direction when the combo's canvas-local Y goes negative
+            // (e.g. when the node is moved up or the canvas is zoomed out), then falls back
+            // to a clamping path that mixes coordinate spaces and yields a wrong screen
+            // position after the canvas BeginWindow hook translates it. Anchor below the
+            // combo in canvas-local coords and let the hook translate cleanly.
+            if (Priv_ImGuiNodeEditor_IsInCanvas())
+            {
+                popup_window->AutoPosLastDirection = ImGuiDir_Down;
+                SetNextWindowPos(bb.GetBL());
+            }
+            else
+            // [/ADAPT_IMGUI_BUNDLE]
+            {
+                // Always override 'AutoPosLastDirection' to not leave a chance for a past value to affect us.
+                ImVec2 size_expected = CalcWindowNextAutoFitSize(popup_window);
+                popup_window->AutoPosLastDirection = (flags & ImGuiComboFlags_PopupAlignLeft) ? ImGuiDir_Left : ImGuiDir_Down; // Left = "Below, Toward Left", Down = "Below, Toward Right (default)"
+                ImRect r_outer = GetPopupAllowedExtentRect(popup_window);
+                ImVec2 pos = FindBestWindowPosForPopupEx(bb.GetBL(), size_expected, &popup_window->AutoPosLastDirection, r_outer, bb, ImGuiPopupPositionPolicy_ComboBox);
+                SetNextWindowPos(pos);
+            }
         }
 
     // We don't use BeginPopupEx() solely because we have a custom name string, which we could make an argument to BeginPopupEx()
@@ -4018,9 +4039,151 @@ bool ImGui::InputText(const char* label, char* buf, size_t buf_size, ImGuiInputT
     return InputTextEx(label, NULL, buf, (int)buf_size, ImVec2(0, 0), flags, callback, user_data);
 }
 
+// [ADAPT_IMGUI_BUNDLE] cf
+bool Priv_ImGuiNodeEditor_IsInCanvas();
+// [/ADAPT_IMGUI_BUNDLE]
+
+
 bool ImGui::InputTextMultiline(const char* label, char* buf, size_t buf_size, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 {
-    return InputTextEx(label, NULL, buf, (int)buf_size, size, flags | ImGuiInputTextFlags_Multiline, callback, user_data);
+    // [ADAPT_IMGUI_BUNDLE] cf https://github.com/thedmd/imgui-node-editor/issues/242
+    // When inside the imgui-node-editor canvas, we cannot open the child window that
+    // InputTextMultiline uses internally. Instead, we render a read-only preview box at the
+    // exact requested size (same look & size as the real widget), and open a resizable popup
+    // hosting the real editor when the box is clicked.
+    if (Priv_ImGuiNodeEditor_IsInCanvas())
+    {
+        ImGuiWindow* window = GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
+
+        ImGuiContext& g = *GImGui;
+        ImGuiStyle& style = g.Style;
+
+        PushID(label); // make sure to use unique ids
+        const ImGuiID box_id = window->GetID("##ml_box");
+
+        // Resolve the size exactly like the real multiline widget (default = 8 lines high),
+        // honoring SetNextItemWidth() through CalcItemWidth().
+        const ImVec2 label_size = CalcTextSize(label, NULL, true);
+        const float default_h = g.FontSize * 8.0f + style.FramePadding.y * 2.0f;
+        const ImVec2 frame_size = CalcItemSize(size, CalcItemWidth(), default_h);
+
+        const ImVec2 frame_min = window->DC.CursorPos;
+        const ImRect frame_bb(frame_min, frame_min + frame_size);
+        const ImRect total_bb(frame_min, frame_bb.Max + ImVec2(label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f, 0.0f));
+
+        ItemSize(total_bb, style.FramePadding.y);
+        if (!ItemAdd(total_bb, box_id, &frame_bb))
+        {
+            PopID();
+            return false;
+        }
+
+        // Interaction: behave like any widget. ButtonBehavior takes ActiveId on press, so a drag
+        // started on the box does NOT move the node (you grab the node body/title instead).
+        bool hovered;
+        bool pressed = ButtonBehavior(frame_bb, box_id, &hovered, NULL);
+        if (hovered)
+            SetMouseCursor(ImGuiMouseCursor_TextInput);
+        // Open the popup on a click, but not when the press turned into a drag (e.g. dragging an
+        // external resize grip placed over the box) - otherwise the editor would pop open on resize.
+        if (pressed && !IsMouseDragPastThreshold(0))
+            OpenPopup("##ml_edit");
+
+        // The popup being open means "edited elsewhere": keep the box highlighted and fade its
+        // text, so the link between the box and the popup stays obvious.
+        const bool editing = IsPopupOpen("##ml_edit");
+        const bool highlight = hovered || editing;
+
+        // Frame background + border. On highlight, blend FrameBg -> FrameBgHovered (theme-aware, subtle).
+        const ImU32 frame_col = highlight
+            ? GetColorU32(ImLerp(style.Colors[ImGuiCol_FrameBg], style.Colors[ImGuiCol_FrameBgHovered], 0.25f))
+            : GetColorU32(ImGuiCol_FrameBg);
+        RenderNavCursor(frame_bb, box_id);
+        RenderFrame(frame_bb.Min, frame_bb.Max, frame_col, true, style.FrameRounding);
+
+        // Draw the text, clipped to the inner area (no word-wrap, like the real widget).
+        const ImRect inner_bb(frame_bb.Min + style.FramePadding, frame_bb.Max - style.FramePadding);
+        const float line_h = g.FontSize;
+        const ImU32 text_col = GetColorU32(ImGuiCol_Text, editing ? 0.5f : 1.0f);
+        const char* text_end = buf + strlen(buf);
+        window->DrawList->PushClipRect(inner_bb.Min, inner_bb.Max, true);
+        {
+            const char* s = buf;
+            ImVec2 pos = inner_bb.Min;
+            int n_lines = 0;
+            bool horiz_overflow = false;
+            while (s <= text_end)
+            {
+                const char* line_end = strchr(s, '\n');
+                if (line_end == NULL)
+                    line_end = text_end;
+                if (pos.y > inner_bb.Max.y) // stop drawing once below the visible area
+                    { n_lines++; break; }
+                window->DrawList->AddText(pos, text_col, s, line_end);
+                if (CalcTextSize(s, line_end).x > inner_bb.GetWidth())
+                    horiz_overflow = true;
+                pos.y += line_h;
+                n_lines++;
+                if (line_end == text_end)
+                    break;
+                s = line_end + 1;
+            }
+
+            // Overflow hints: fade the box fill back in along each clipped edge.
+            const ImU32 c_transp = frame_col & ~IM_COL32_A_MASK;
+            if ((float)n_lines * line_h > inner_bb.GetHeight() + 1.0f)
+            {
+                const float fade_h = ImMin(line_h, inner_bb.GetHeight());
+                window->DrawList->AddRectFilledMultiColor(
+                    ImVec2(frame_bb.Min.x, frame_bb.Max.y - fade_h), frame_bb.Max,
+                    c_transp, c_transp, frame_col, frame_col);
+            }
+            if (horiz_overflow)
+            {
+                const float fade_w = ImMin(line_h * 1.5f, inner_bb.GetWidth());
+                window->DrawList->AddRectFilledMultiColor(
+                    ImVec2(frame_bb.Max.x - fade_w, frame_bb.Min.y), frame_bb.Max,
+                    c_transp, frame_col, frame_col, c_transp);
+            }
+        }
+        window->DrawList->PopClipRect();
+
+        // Label, to the right of the frame (rendered up to "##", like the real widget).
+        if (label_size.x > 0.0f)
+        {
+            const char* label_end = FindRenderedTextEnd(label);
+            RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label, label_end);
+        }
+
+        // Popup with the real editor. The popup is outside the canvas, so its child window works
+        // (iff the node-editor popup patches are applied:
+        //  https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-1681806764
+        //  https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-2404714757 ).
+        // We use BeginPopupEx (not BeginPopup, which forces AlwaysAutoResize) so the popup is
+        // resizable: it opens at the requested size, then keeps its own resized size across reopens.
+        // Resizing the popup does NOT change the read-only preview box.
+        // There is no infinite recursion: inside the popup we are no longer in the canvas.
+        bool changed = false;
+        const ImGuiID popup_id = GetID("##ml_edit");
+        SetNextWindowSize(frame_size + style.WindowPadding * 2.0f, ImGuiCond_FirstUseEver);
+        if (BeginPopupEx(popup_id, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings))
+        {
+            if (InputTextMultiline("##edit", buf, buf_size, GetContentRegionAvail(), flags, callback, user_data))
+                changed = true;
+            EndPopup();
+        }
+
+        PopID();
+        return changed;
+    }
+    // [/ADAPT_IMGUI_BUNDLE]
+    else
+    {
+        // Standard behavior outside of imgui-node-editor canvas
+        return InputTextEx(label, NULL, buf, (int)buf_size, size, flags | ImGuiInputTextFlags_Multiline, callback, user_data);
+    }
 }
 
 bool ImGui::InputTextWithHint(const char* label, const char* hint, char* buf, size_t buf_size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
