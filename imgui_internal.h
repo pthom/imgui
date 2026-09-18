@@ -2495,6 +2495,11 @@ struct ImGuiIDStackTool
 //-----------------------------------------------------------------------------
 
 typedef void (*ImGuiContextHookCallback)(ImGuiContext* ctx, ImGuiContextHook* hook);
+
+// [ADAPT_IMGUI_BUNDLE]: signature of ImGuiContext::BeginWindowCallback / EndWindowCallback
+#define IMGUI_HAS_BEGIN_END_WINDOW_CALLBACKS
+typedef void (*ImGuiBeginEndWindowCallback)(ImGuiContext* ctx, void* user_data);
+
 enum ImGuiContextHookType { ImGuiContextHookType_NewFramePre, ImGuiContextHookType_NewFramePost, ImGuiContextHookType_EndFramePre, ImGuiContextHookType_EndFramePost, ImGuiContextHookType_RenderPre, ImGuiContextHookType_RenderPost, ImGuiContextHookType_Shutdown, ImGuiContextHookType_PendingRemoval_ };
 
 struct ImGuiContextHook
@@ -2862,6 +2867,14 @@ struct ImGuiContext
     // Hooks
     ImVector<ImGuiContextHook>          Hooks;                  // Hooks for extensions (e.g. test engine)
     ImGuiID                             HookIdNext;             // Next available HookId
+    // [ADAPT_IMGUI_BUNDLE]: when set, Begin() calls BeginWindowCallback at its start, and End() calls EndWindowCallback at its end.
+    // They let a library that changes the coordinate space (e.g. the zoomable canvas of imgui-node-editor) know when a window is
+    // begun from inside it. One slot: a library saves the previous values when it sets them, and restores them when it is done.
+    // Both run while the parent window is current. They get no window name or flags: BeginWindowCallback reads g.NextWindowData.
+    // cf https://github.com/thedmd/imgui-node-editor/issues/242#issuecomment-1681806764
+    ImGuiBeginEndWindowCallback         BeginWindowCallback = NULL;
+    ImGuiBeginEndWindowCallback         EndWindowCallback = NULL;
+    void*                               BeginEndWindowCallbackUserData = NULL;
     ImGuiDemoMarkerCallback             DemoMarkerCallback;
 
     // Localization
