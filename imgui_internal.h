@@ -2496,6 +2496,10 @@ struct ImGuiIDStackTool
 
 typedef void (*ImGuiContextHookCallback)(ImGuiContext* ctx, ImGuiContextHook* hook);
 
+// [ADAPT_IMGUI_BUNDLE]: signature of ImGuiContext::InputTextMultilineOverride (same parameters as InputTextMultiline())
+#define IMGUI_HAS_INPUT_TEXT_MULTILINE_OVERRIDE
+typedef bool (*ImGuiInputTextMultilineOverride)(const char* label, char* buf, size_t buf_size, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data);
+
 // [ADAPT_IMGUI_BUNDLE]: signature of ImGuiContext::BeginWindowCallback / EndWindowCallback
 #define IMGUI_HAS_BEGIN_END_WINDOW_CALLBACKS
 typedef void (*ImGuiBeginEndWindowCallback)(ImGuiContext* ctx, void* user_data);
@@ -2813,6 +2817,10 @@ struct ImGuiContext
     ImGuiInputTextState     InputTextState;
     ImGuiTextIndex          InputTextLineIndex;                 // Temporary storage
     ImGuiInputTextDeactivatedState InputTextDeactivatedState;
+    // [ADAPT_IMGUI_BUNDLE]: when set, InputTextMultiline() calls this function instead of its own implementation.
+    // InputTextMultiline() uses a child window: this lets a library inside which child windows do not work
+    // (e.g. the zoomable canvas of imgui-node-editor) provide a replacement while it is active.
+    ImGuiInputTextMultilineOverride InputTextMultilineOverride = NULL;
     ImFontBaked             InputTextPasswordFontBackupBaked;
     ImFontFlags             InputTextPasswordFontBackupFlags;
     ImGuiID                 InputTextReactivateId;              // ID of InputText to reactivate on next frame (for io.ConfigInputTextEnterKeepActive behavior)
