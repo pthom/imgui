@@ -136,7 +136,7 @@
 #include <TargetConditionals.h>
 #endif
 #ifdef __EMSCRIPTEN__
-#include <emscripten/em_js.h>
+#include <emscripten.h>  // For EM_ASM
 #endif
 #undef Status // X11 headers are leaking this.
 
@@ -559,7 +559,16 @@ bool ImGui_ImplSDL2_ProcessEvent(const SDL_Event* event)
 }
 
 #ifdef __EMSCRIPTEN__
-EM_JS(void, ImGui_ImplSDL2_EmscriptenOpenURL, (char const* url), { url = url ? UTF8ToString(url) : null; if (url) window.open(url, '_blank'); });
+// Pyodide/SIDE_MODULE fix: Use EM_ASM instead of EM_JS to avoid undefined symbol issues
+// EM_JS creates a separate symbol that doesn't work well in SIDE_MODULE builds
+// EM_ASM embeds the JavaScript inline without creating external symbols
+void ImGui_ImplSDL2_EmscriptenOpenURL(char const* url)
+{
+    EM_ASM({
+        var url_str = $0 ? UTF8ToString($0) : null;
+        if (url_str) window.open(url_str, '_blank');
+    }, url);
+}
 #endif
 
 static bool ImGui_ImplSDL2_Init(SDL_Window* window, SDL_Renderer* renderer, void* sdl_gl_context)
@@ -1079,6 +1088,10 @@ void ImGui_ImplSDL2_NewFrame()
     if (current_time <= bd->Time)
         current_time = bd->Time + 1;
     io.DeltaTime = bd->Time > 0 ? (float)((double)(current_time - bd->Time) / (double)frequency) : (float)(1.0f / 60.0f);
+    // Workaround: under emscripten, consecutive calls to SDL_GetPerformanceCounter() might lead to the same result, which will result in IM_ASSERT(g.IO.DeltaTime > 0.0f) to fail later, inside ImGui::ErrorCheckNewFrameSanityChecks()
+    if (io.DeltaTime <= 0.f)
+        io.DeltaTime = 1.f / 60.f;
+
     bd->Time = current_time;
 
     if (bd->MouseLastLeaveFrame && bd->MouseLastLeaveFrame >= ImGui::GetFrameCount() && bd->MouseButtonsDown == 0)
