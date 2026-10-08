@@ -2750,6 +2750,19 @@ static bool TempInputIsClampEnabled(ImGuiSliderFlags flags, ImGuiDataType data_t
     return false;
 }
 
+// On a touch screen, the finger hides the value of the drag or slider it moves: display it in a tooltip, which is positioned above the finger for touch inputs.
+// Not on the frame of activation, so that a tap does not flash it.
+static void DisplayValueTooltipForTouchScreen(ImGuiID id, const char* value_buf, const char* value_buf_end)
+{
+    ImGuiContext& g = *GImGui;
+    if (g.ActiveId != id || g.ActiveIdIsJustActivated || g.ActiveIdSource != ImGuiInputSource_Mouse || g.IO.MouseSource != ImGuiMouseSource_TouchScreen)
+        return;
+    if (!ImGui::BeginTooltipEx(ImGuiTooltipFlags_OverridePrevious, ImGuiWindowFlags_None))
+        return;
+    ImGui::TextUnformatted(value_buf, value_buf_end);
+    ImGui::EndTooltip();
+}
+
 // Note: p_data, p_min and p_max are _pointers_ to a memory address holding the data. For a Drag widget, p_min and p_max are optional.
 // Read code of e.g. DragFloat(), DragInt() etc. or examples in 'Demo->Widgets->Data Types' to understand how to use this function directly.
 bool ImGui::DragScalar(const char* label, ImGuiDataType data_type, void* p_data, float v_speed, const void* p_min, const void* p_max, const char* format, ImGuiSliderFlags flags)
@@ -2844,6 +2857,7 @@ bool ImGui::DragScalar(const char* label, ImGuiDataType data_type, void* p_data,
     RenderTextClipped(frame_bb.Min, frame_bb.Max, value_buf, value_buf_end, NULL, ImVec2(0.5f, 0.5f));
     if (is_mixed)
         PopStyleColor();
+    DisplayValueTooltipForTouchScreen(id, value_buf, value_buf_end);
 
     if (label_size.x > 0.0f)
         RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label, label_end, false);
@@ -3456,6 +3470,7 @@ bool ImGui::SliderScalar(const char* label, ImGuiDataType data_type, void* p_dat
     RenderTextClipped(frame_bb.Min, frame_bb.Max, value_buf, value_buf_end, NULL, ImVec2(0.5f, 0.5f));
     if (is_mixed)
         PopStyleColor();
+    DisplayValueTooltipForTouchScreen(id, value_buf, value_buf_end);
 
     if (label_size.x > 0.0f)
         RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label, label_end, false);
@@ -3613,6 +3628,7 @@ bool ImGui::VSliderScalar(const char* label, const ImVec2& size, ImGuiDataType d
     RenderTextClipped(ImVec2(frame_bb.Min.x, frame_bb.Min.y + style.FramePadding.y), frame_bb.Max, value_buf, value_buf_end, NULL, ImVec2(0.5f, 0.0f));
     if (is_mixed)
         PopStyleColor();
+    DisplayValueTooltipForTouchScreen(id, value_buf, value_buf_end);
 
     if (label_size.x > 0.0f)
         RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label, label_end, false);
