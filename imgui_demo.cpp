@@ -368,6 +368,48 @@ void ImGui::ShowDemoWindow(bool* p_open)
 bool gIsImGuiDemoWindowUserEdited = true;
 bool gIsImGuiDemoWindow_no_close = false;
 static bool sUseExampleAppDockSpaceImguiExplorer = false;  // [Bundle] true when called from imgui_explorer with constrained positioning
+static ImGuiDemoWindowData* sDemoWindowData = NULL;  // [Bundle] the demo's data, for ShowDemoWindow_MenuSectionWindow()
+
+// [Bundle] The window of a section of the demo's menus ("Examples/Console", "Tools/Style Editor", and their
+// subsections): its title, or NULL when the section has none; `open` opens it, as its menu item does. The ImGui
+// Explorer reveals such a section this way; it declares this function itself, as it does the globals above.
+// (Not "Examples/Menu": its main menu bar would cover the application's top, with no close button.)
+const char* ShowDemoWindow_MenuSectionWindow(const char* section, bool open)
+{
+    ImGuiDemoWindowData* d = sDemoWindowData;
+    if (d == NULL)
+        return NULL;
+    const struct { const char* section; bool* flag; const char* title; } windows[] =
+    {
+        { "Examples/Console",                     &d->ShowAppConsole,           "Example: Console" },
+        { "Examples/Log",                         &d->ShowAppLog,               "Example: Log" },
+        { "Examples/Simple layout",               &d->ShowAppLayout,            "Example: Simple layout" },
+        { "Examples/Property editor",             &d->ShowAppPropertyEditor,    "Example: Property editor" },
+        { "Examples/Property Editor",             &d->ShowAppPropertyEditor,    "Example: Property editor" },
+        { "Examples/Long text display",           &d->ShowAppLongText,          "Example: Long text display" },
+        { "Examples/Auto-resizing window",        &d->ShowAppAutoResize,        "Example: Auto-resizing window" },
+        { "Examples/Constrained Resizing window",  &d->ShowAppConstrainedResize, "Example: Constrained Resize" },
+        { "Examples/Simple overlay",              &d->ShowAppSimpleOverlay,     "Example: Simple overlay" },
+        { "Examples/Fullscreen window",           &d->ShowAppFullscreen,        "Example: Fullscreen window" },
+        { "Examples/Manipulating window titles",  &d->ShowAppWindowTitles,      "Same title as another window##1" },
+        { "Examples/Custom rendering",            &d->ShowAppCustomRendering,   "Example: Custom rendering" },
+        { "Examples/Documents",                   &d->ShowAppDocuments,         "Example: Documents" },
+        { "Examples/Assets Browser",              &d->ShowAppAssetsBrowser,     "Example: Assets Browser" },
+        { "Tools/About Dear ImGui",               &d->ShowAbout,                "About Dear ImGui" },
+        { "Tools/Style Editor",                   &d->ShowStyleEditor,          "Dear ImGui Style Editor" },
+    };
+    for (const auto& w : windows)
+    {
+        size_t n = strlen(w.section);
+        if (strncmp(section, w.section, n) == 0 && (section[n] == 0 || section[n] == '/' || section[n] == '#'))
+        {
+            if (open)
+                *w.flag = true;
+            return w.title;
+        }
+    }
+    return NULL;
+}
 
 void ImGui::ShowDemoWindow_MaybeDocked(bool create_window, bool* p_open, ImGuiWindowFlags initial_extra_flags, ImVec2 window_pos, ImVec2 window_size)
 {
@@ -383,6 +425,7 @@ void ImGui::ShowDemoWindow_MaybeDocked(bool create_window, bool* p_open, ImGuiWi
 
     // Stored data
     static ImGuiDemoWindowData demo_data;
+    sDemoWindowData = &demo_data;  // [Bundle]
 
     // Examples Apps (accessible from the "Examples" menu)
     if (demo_data.ShowMainMenuBar)          { ShowExampleAppMainMenuBar(); }
