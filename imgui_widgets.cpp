@@ -2751,6 +2751,14 @@ static bool TempInputIsClampEnabled(ImGuiSliderFlags flags, ImGuiDataType data_t
 }
 
 // On a touch screen, the finger may hide the value of the drag or slider (just below the finger): we display it in a tooltip above the finger.
+// A widget that the mouse drags along an axis tells it (see ImGuiItemDragAxisCallback)
+static void ItemDragAxis(ImGuiID id, const ImRect& bb, ImGuiAxis axis)
+{
+    ImGuiContext& g = *GImGui;
+    if (g.ItemDragAxisCallback != NULL)
+        g.ItemDragAxisCallback(&g, id, bb, axis);
+}
+
 static void DisplayValueTooltipForTouchScreen(ImGuiID id, const char* value_buf, const char* value_buf_end)
 {
     ImGuiContext& g = *GImGui;
@@ -2785,6 +2793,7 @@ bool ImGui::DragScalar(const char* label, ImGuiDataType data_type, void* p_data,
     ItemSize(total_bb, style.FramePadding.y);
     if (!ItemAdd(total_bb, id, &frame_bb, temp_input_allowed ? ImGuiItemFlags_Inputable : 0))
         return false;
+    ItemDragAxis(id, frame_bb, ImGuiAxis_X);
 
     // Default format string when passing NULL
     if (format == NULL)
@@ -3402,6 +3411,7 @@ bool ImGui::SliderScalar(const char* label, ImGuiDataType data_type, void* p_dat
     ItemSize(total_bb, style.FramePadding.y);
     if (!ItemAdd(total_bb, id, &frame_bb, temp_input_allowed ? ImGuiItemFlags_Inputable : 0))
         return false;
+    ItemDragAxis(id, frame_bb, ImGuiAxis_X);
 
     // Default format string when passing NULL
     if (format == NULL)
@@ -3585,6 +3595,7 @@ bool ImGui::VSliderScalar(const char* label, const ImVec2& size, ImGuiDataType d
     ItemSize(bb, style.FramePadding.y);
     if (!ItemAdd(frame_bb, id))
         return false;
+    ItemDragAxis(id, frame_bb, ImGuiAxis_Y);
 
     // Default format string when passing NULL
     if (format == NULL)
@@ -6304,6 +6315,7 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
     {
         // Hue wheel + SV triangle logic
         InvisibleButton("hsv", ImVec2(sv_picker_size + style.ItemInnerSpacing.x + bars_width, sv_picker_size));
+        ItemDragAxis(g.LastItemData.ID, g.LastItemData.Rect, ImGuiAxis_None);
         if (IsItemActive() && !is_readonly)
         {
             ImVec2 initial_off = g.IO.MouseClickedPos[0] - wheel_center;
@@ -6339,6 +6351,7 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
     {
         // SV rectangle logic
         InvisibleButton("sv", ImVec2(sv_picker_size, sv_picker_size));
+        ItemDragAxis(g.LastItemData.ID, g.LastItemData.Rect, ImGuiAxis_None);
         if (IsItemActive() && !is_readonly)
         {
             S = ImSaturate((io.MousePos.x - picker_pos.x) / (sv_picker_size - 1));
@@ -6352,6 +6365,7 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
         // Hue bar logic
         SetCursorScreenPos(ImVec2(bar0_pos_x, picker_pos.y));
         InvisibleButton("hue", ImVec2(bars_width, sv_picker_size));
+        ItemDragAxis(g.LastItemData.ID, g.LastItemData.Rect, ImGuiAxis_Y);
         if (IsItemActive() && !is_readonly)
         {
             H = ImSaturate((io.MousePos.y - picker_pos.y) / (sv_picker_size - 1));
@@ -6364,6 +6378,7 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
     {
         SetCursorScreenPos(ImVec2(bar1_pos_x, picker_pos.y));
         InvisibleButton("alpha", ImVec2(bars_width, sv_picker_size));
+        ItemDragAxis(g.LastItemData.ID, g.LastItemData.Rect, ImGuiAxis_Y);
         if (IsItemActive())
         {
             col[3] = 1.0f - ImSaturate((io.MousePos.y - picker_pos.y) / (sv_picker_size - 1));

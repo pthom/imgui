@@ -4575,6 +4575,7 @@ ImGuiContext::ImGuiContext(ImFontAtlas* shared_font_atlas)
     SettingsDirtyTimer = 0.0f;
     HookIdNext = 0;
     DemoMarkerCallback = NULL;
+    ItemDragAxisCallback = NULL;
 
     memset(LocalizationTable, 0, sizeof(LocalizationTable));
 

@@ -2518,6 +2518,11 @@ struct ImGuiContextHook
 };
 
 typedef void (*ImGuiDemoMarkerCallback)(const char* file, int line, const char* section);
+// Called by the widgets that the mouse drags along an axis (sliders, drags: ImGuiAxis_X; vertical sliders: ImGuiAxis_Y;
+// the color picker's square: ImGuiAxis_None, both), right after their ItemAdd(). An extension may want to know: a touch
+// layer gives them a finger's drag along their axis at once, instead of scrolling the window.
+#define IMGUI_HAS_ITEM_DRAG_AXIS_CALLBACK
+typedef void (*ImGuiItemDragAxisCallback)(ImGuiContext* ctx, ImGuiID id, const ImRect& bb, ImGuiAxis axis);
 
 //-----------------------------------------------------------------------------
 // [SECTION] ImGuiContext (main Dear ImGui context)
@@ -2884,6 +2889,7 @@ struct ImGuiContext
     ImGuiBeginEndWindowCallback         EndWindowCallback = NULL;
     void*                               BeginEndWindowCallbackUserData = NULL;
     ImGuiDemoMarkerCallback             DemoMarkerCallback;
+    ImGuiItemDragAxisCallback           ItemDragAxisCallback;           // See ImGuiItemDragAxisCallback
 
     // Localization
     const char*             LocalizationTable[ImGuiLocKey_COUNT];
